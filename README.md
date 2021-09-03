@@ -1,5 +1,9 @@
 # @docus/monarch
 
+[![npm version][npm-version-src]][npm-version-href]
+[![npm downloads][npm-downloads-src]][npm-downloads-href]
+[![License][license-src]][license-href]
+
 MDC syntax writing experience in Monaco editor
 
 
@@ -41,3 +45,15 @@ const editor = monaco.editor.create(el, {
   // see: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.editor.istandaloneeditorconstructionoptions.html
 })
 ```
+
+
+
+<!-- Badges -->
+[npm-version-src]: https://img.shields.io/npm/v/@docus/monarch/latest.svg
+[npm-version-href]: https://npmjs.com/package/@docus/monarch
+
+[npm-downloads-src]: https://img.shields.io/npm/dt/@docus/monarch.svg
+[npm-downloads-href]: https://npmjs.com/package/@docus/monarch
+
+[license-src]: https://img.shields.io/npm/l/@docus/monarch.svg
+[license-href]: https://npmjs.com/package/@docus/monarch
