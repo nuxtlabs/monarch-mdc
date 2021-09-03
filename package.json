@@ -10,11 +10,12 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "vite -c playground/vite.config.js",
     "build": "unbuild"
   },
   "devDependencies": {
     "@antfu/utils": "^0.3.0",
+    "@vitejs/plugin-vue": "^1.6.0",
     "@vue/compiler-sfc": "^3.2.8",
     "@vueuse/core": "^6.1.0",
     "monaco-editor": "^0.27.0",
