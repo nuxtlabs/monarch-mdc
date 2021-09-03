@@ -14,13 +14,13 @@
     "build": "unbuild"
   },
   "devDependencies": {
-    "@antfu/utils": "^0.2.4",
-    "@vue/compiler-sfc": "^3.2.4",
-    "@vueuse/core": "^6.0.0",
+    "@antfu/utils": "^0.3.0",
+    "@vue/compiler-sfc": "^3.2.8",
+    "@vueuse/core": "^6.1.0",
     "monaco-editor": "^0.27.0",
     "monaco-editor-core": "^0.27.0",
     "unbuild": "^0.4.2",
     "vite": "^1.0.0-rc.13",
-    "vue": "^3.2.4"
+    "vue": "^3.2.8"
   }
 }
