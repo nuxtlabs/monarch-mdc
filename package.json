@@ -17,7 +17,7 @@
     "@antfu/utils": "^0.3.0",
     "@vitejs/plugin-vue": "^1.9.4",
     "@vue/compiler-sfc": "^3.2.21",
-    "@vueuse/core": "^6.7.4",
+    "@vueuse/core": "^7.7.1",
     "monaco-editor": "^0.29.1",
     "monaco-editor-core": "^0.29.2",
     "unbuild": "^0.5.11",
