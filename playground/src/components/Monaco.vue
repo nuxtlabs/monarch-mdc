@@ -21,5 +21,8 @@ emit('change', props.value)
 </script>
 
 <template>
-  <div ref="target" style="height: 100vh"></div>
+  <div
+    ref="target"
+    style="height: 100vh"
+  />
 </template>

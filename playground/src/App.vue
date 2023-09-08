@@ -1,6 +1,12 @@
 <template>
-  <div class="h-full default-theme" :push-other-panes="false">
-      <Editor class="editor" :file="currentFile" />
+  <div
+    class="h-full default-theme"
+    :push-other-panes="false"
+  >
+    <Editor
+      class="editor"
+      :file="currentFile"
+    />
   </div>
 </template>
 
@@ -15,6 +21,68 @@ key: value
 Inline :block
 Inline :block[with content]
 -->
+
+
+# The "ı" character
+
+The "ı" character
+
+\`\`\`
+code
+\`\`\`
+
+\`\`\`ts
+const a = true
+class B {
+  private const b = true
+}
+\`\`\`
+
+\`\`\`ts meta data
+const a = true
+class B {
+  private const b = true
+}
+\`\`\`
+
+
+\`\`\`ts [help] 
+const ts = "help"
+const a = 3
+class B {
+  private const b = true
+  // help
+}
+\`\`\`
+
+\`\`\`ts {1,2}
+const ts = "help"
+const a = 3
+class B {
+  private const b = true
+  // help
+}
+\`\`\`
+
+
+\`\`\`ts {1,2} [filename]
+const ts = "help"
+const a = 3
+class B {
+  private const b = true
+  // help
+}
+\`\`\`
+
+
+\`\`\`ts [help] {1,3}
+const ts = "help"
+const a = 3
+class B {
+  private const b = true
+  // help
+}
+\`\`\`
 
 [Span]
 

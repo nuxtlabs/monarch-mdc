@@ -15,7 +15,7 @@ const setupMonaco = createSingletonPromise(async () => {
   })
   monaco.languages.register({id: 'docus-markdown'})
   // Register a tokens provider for the language
-  monaco.languages.setMonarchTokensProvider('docus-markdown', markdownLanguage);
+  monaco.languages.setMonarchTokensProvider('docus-markdown', markdownLanguage)
   
   return { monaco }
 })

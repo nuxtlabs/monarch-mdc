@@ -1,5 +1,8 @@
 <template>
-  <Monaco :value="raw" language="docus-markdown" @change="update" />
+  <Monaco
+    :value="raw"
+    language="docus-markdown"
+  />
 </template>
 
 <script setup lang="ts">
@@ -14,9 +17,4 @@ const props = defineProps({
 })
 
 const raw = ref(props.file)
-
-
-function update(content) {
-  
-}
 </script>
