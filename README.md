@@ -1,26 +1,26 @@
-# @docus/monarch
+# @nuxtlabs/monarch-mdc
 
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
 
-MDC syntax writing experience in Monaco editor
+Integrate MDC syntax with Monaco Editor.
 
 
 ## Installation
 
 ```bash
 #using yarn
-yarn add @docus/monarch
+yarn add @nuxtlabs/monarch-mdc
 # using npm
-npm install @docus/monarch
+npm install @nuxtlabs/monarch-mdc
 ```
 
 ## Usage
 
 ```js
 import * as monaco from 'monaco-editor'
-import { language as markdownLanguage } from '@docus/monarch'
+import { language as markdownLanguage } from '@nuxtlabs/monarch-mdc'
 
 // Register language
 monaco.languages.register({ id: 'docus-markdown' })
@@ -49,11 +49,11 @@ const editor = monaco.editor.create(el, {
 
 
 <!-- Badges -->
-[npm-version-src]: https://img.shields.io/npm/v/@docus/monarch/latest.svg
-[npm-version-href]: https://npmjs.com/package/@docus/monarch
+[npm-version-src]: https://img.shields.io/npm/v/@nuxtlabs/monarch-mdc/latest.svg
+[npm-version-href]: https://npmjs.com/package/@nuxtlabs/monarch-mdc
 
-[npm-downloads-src]: https://img.shields.io/npm/dt/@docus/monarch.svg
-[npm-downloads-href]: https://npmjs.com/package/@docus/monarch
+[npm-downloads-src]: https://img.shields.io/npm/dt/@nuxtlabs/monarch-mdc.svg
+[npm-downloads-href]: https://npmjs.com/package/@nuxtlabs/monarch-mdc
 
-[license-src]: https://img.shields.io/npm/l/@docus/monarch.svg
-[license-href]: https://npmjs.com/package/@docus/monarch
+[license-src]: https://img.shields.io/npm/l/@nuxtlabs/monarch-mdc.svg
+[license-href]: https://npmjs.com/package/@nuxtlabs/monarch-mdc

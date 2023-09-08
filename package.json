@@ -1,8 +1,8 @@
 {
-  "name": "@docus/monarch",
+  "name": "@nuxtlabs/monarch-mdc",
   "version": "0.1.0",
   "license": "MIT",
-  "description": "Integrate Docus Markdown with Monaco Editor",
+  "description": "Integrate MDC syntax with Monaco Editor",
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,8 @@
   "scripts": {
     "dev": "vite -c playground/vite.config.js",
     "lint": "eslint .",
-    "build": "unbuild"
+    "build": "unbuild",
+    "release": "release-it"
   },
   "devDependencies": {
     "@antfu/utils": "^0.7.6",
@@ -23,15 +24,34 @@
     "eslint": "^8.48.0",
     "monaco-editor": "^0.41.0",
     "monaco-editor-core": "^0.41.0",
+    "release-it": "^16.1.5",
     "unbuild": "^2.0.0",
     "vite": "^4.4.9",
     "vue": "^3.3.4"
+  },
+  "packageManager": "pnpm@8.7.4",
+  "release-it": {
+    "git": {
+      "commitMessage": "chore(release): release v${version}"
+    },
+    "github": {
+      "release": true,
+      "releaseName": "v${version}"
+    },
+    "hooks": {
+      "after:bump": "npx changelogen@latest --no-commit --no-tag --output --r $(node -p \"require('./package.json').version\")"
+    },
+    "npm": {
+      "publish": false
+    }
   },
   "build": {
     "entries": [
       "./src/index"
     ],
-    "externals": ["monaco-editor-core"],
+    "externals": [
+      "monaco-editor-core"
+    ],
     "declaration": true
   }
 }
