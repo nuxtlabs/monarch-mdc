@@ -1,11 +1,10 @@
 <script setup lang="ts">
 const source = ref(`---
-key: value
+title: MDC syntax highlighter for Monaco Editor
+repository: https://github.com/nuxtlabs/monarch-mdc
 ---
 
 Integrate MDC syntax with Monaco Editor.
-
-Checkout Source Code: https://github.com/nuxtlabs/monarch-mdc
 
 <!--
 Inline :block
@@ -121,6 +120,10 @@ The content
 ::
 
 `)
+
+useHead({
+  title: 'MDC syntax highlighter for Monaco Editor',
+})
 </script>
 
 <template>
