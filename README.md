@@ -49,6 +49,16 @@ const editor = monaco.editor.create(el, {
 Checkout the [Editor.vue](./playground/components/Editor.vue) for a complete example.
 
 
+## 💻 Development
+
+- Clone repository
+- Install dependencies using `pnpm install`
+- Try playground using `pnpm dev`
+
+## License
+
+[MIT](./LICENSE) - Made with 💚
+
 
 <!-- Badges -->
 [npm-version-src]: https://img.shields.io/npm/v/@nuxtlabs/monarch-mdc/latest.svg
