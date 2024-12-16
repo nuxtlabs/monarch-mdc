@@ -121,6 +121,10 @@ The content
 
 `)
 
+useSeoMeta({
+  ogImage: 'https://monarch-mdc.nuxt.dev/preview.png',
+})
+
 useHead({
   title: 'MDC syntax highlighter for Monaco Editor',
 })
