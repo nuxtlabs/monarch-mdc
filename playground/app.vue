@@ -2,6 +2,11 @@
 const source = ref(`---
 key: value
 ---
+
+Integrate MDC syntax with Monaco Editor.
+
+Checkout Source Code: https://github.com/nuxtlabs/monarch-mdc
+
 <!--
 Inline :block
 Inline :block[with content]
