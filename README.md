@@ -23,8 +23,8 @@ import * as monaco from 'monaco-editor'
 import { language as markdownLanguage } from '@nuxtlabs/monarch-mdc'
 
 // Register language
-monaco.languages.register({ id: 'docus-markdown' })
-monaco.languages.setMonarchTokensProvider('docus-markdown', markdownLanguage);
+monaco.languages.register({ id: 'mdc' })
+monaco.languages.setMonarchTokensProvider('mdc', markdownLanguage);
 
 
 const code = `
@@ -34,7 +34,7 @@ Your **awesome** markdown
 // Create monaco model
 const model = monaco.editor.createModel(
   code,
-  'docus-markdown'
+  'mdc'
 )
 
 // Create your editor
@@ -45,6 +45,8 @@ const editor = monaco.editor.create(el, {
   // see: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.editor.istandaloneeditorconstructionoptions.html
 })
 ```
+
+Checkout the [Editor.vue](./playground/components/Editor.vue) for a complete example.
 
 
 

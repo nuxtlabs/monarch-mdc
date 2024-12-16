@@ -1,0 +1,19 @@
+{
+  "name": "monarch-mdc-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@monaco-editor/loader": "^1.4.0",
+    "@nuxt/ui": "3.0.0-alpha.10",
+    "nuxt": "^3.14.1592",
+    "vue": "latest",
+    "vue-router": "latest"
+  }
+}

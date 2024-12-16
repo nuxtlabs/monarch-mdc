@@ -6,30 +6,30 @@ import type { languages } from 'monaco-editor-core'
 
 export const conf: languages.LanguageConfiguration = {
   comments: {
-    blockComment: ['<!--', '-->']
+    blockComment: ['<!--', '-->'],
   },
   brackets: [
     ['{', '}'],
     ['[', ']'],
-    ['(', ')']
+    ['(', ')'],
   ],
   autoClosingPairs: [
     { open: '{', close: '}' },
     { open: '[', close: ']' },
     { open: '(', close: ')' },
-    { open: '<', close: '>', notIn: ['string'] }
+    { open: '<', close: '>', notIn: ['string'] },
   ],
   surroundingPairs: [
     { open: '(', close: ')' },
     { open: '[', close: ']' },
-    { open: '`', close: '`' }
+    { open: '`', close: '`' },
   ],
   folding: {
     markers: {
-      start: new RegExp('^\\s*<!--\\s*#?region\\b.*-->'),
-      end: new RegExp('^\\s*<!--\\s*#?endregion\\b.*-->')
-    }
-  }
+      start: /^\\s*<!--\\s*#?region\\b.*-->/,
+      end: /^\\s*<!--\\s*#?endregion\\b.*-->/,
+    },
+  },
 }
 
 export const language = <languages.IMonarchLanguage>{
@@ -39,38 +39,38 @@ export const language = <languages.IMonarchLanguage>{
   // escape codes
   control: /[\\`*_[\]{}()#+\-.!]/,
   noncontrol: /[^\\`*_[\]{}()#+\-.!]/,
-  escapes: /\\(?:@control)/,
+  escapes: /\\@control/,
 
   // escape codes for javascript/CSS strings
-  jsescapes: /\\(?:[btnfr\\"']|[0-7][0-7]?|[0-3][0-7]{2})/,
+  jsescapes: /\\(?:[btnfr\\"']|[0-3]?[0-7]{1,2})/,
 
   // non matched elements
   empty: [
     'area', 'base', 'basefont', 'br', 'col', 'frame',
-    'hr', 'img', 'input', 'isindex', 'link', 'meta', 'param'
+    'hr', 'img', 'input', 'isindex', 'link', 'meta', 'param',
   ],
 
   tokenizer: {
     root: [
       [/^---$/, { token: '', next: '@frontmatter', nextEmbedded: 'yaml' }],
-      { include: 'markdown' }
+      { include: 'markdown' },
     ],
 
     frontmatter: [
       [/^\s*---\s*$/, { token: '', next: '@markdown', nextEmbedded: '@pop', bracket: '@close' }],
-      [/.*$/, 'variable.source']
+      [/.*$/, 'variable.source'],
     ],
 
     markdown: [
 
       // headers (with #)
-			[/^(\s{0,3}#+)/, { token: 'keyword', next: '@headercontent' }],
+      [/^(\s{0,3}#+)/, { token: 'keyword', next: '@headercontent' }],
 
       // headers (with =)
       [/^\s*(=+|-+)\s*$/, 'keyword'],
 
       // headers (with ***)
-      [/^\s*((\*[ ]?)+)\s*$/, 'meta.separator'],
+      [/^\s*((\* ?)+)\s*$/, 'meta.separator'],
 
       // quote
       [/^\s*>+/, 'comment'],
@@ -79,76 +79,77 @@ export const language = <languages.IMonarchLanguage>{
       [/^\s*([*\-+]|\d+\.)\s/, 'keyword'],
 
       // code block (4 spaces indent)
-      [/^(\t|[ ]{4})[^ ].*$/, 'string'],
-			
+      [/^(\t| {4})[^ ].*$/, 'string'],
+
       // code block (3 tilde)
-      [/^\s*~~~\s*((?:\w|[/\-#])+)?\s*$/, { token: '', next: '@codeblock' }],
-			
+      [/^\s*~~~\s*(?:([\w/\-#]+)\s*)?$/, { token: '', next: '@codeblock' }],
+
       // github style code blocks (with backticks and language)
-      [/^\s*```\s*((?:\w|[/\-#])+)\s*$/, { token: '', next: '@codeblockgh', nextEmbedded: '$1' }],
-			
+      [/^\s*```\s*([\w/\-#]+)\s*$/, { token: '', next: '@codeblockgh', nextEmbedded: '$1' }],
+
       // github style code blocks (with backticks but no language)
       [/^\s*```\s*$/, { token: '', next: '@codeblock' }],
-		
+
       // MDC style code blocks (with backticks and language in brackets)
-      [/^\s*```\s*((?:\w|[/\-#])+)(\s*(\{[^}]*\}))?(\s*(\[[^\]]*\]))?(\s*(\{[^}]*\}))?.*$/, { token: '', next: '@codeblockmdc', nextEmbedded: '$1' }],
+      // eslint-disable-next-line regexp/no-super-linear-backtracking
+      [/^\s*```\s*([\w/\-#]+)(\s*(\{[^}]*\}))?(\s*(\[[^\]]*\]))?(\s*(\{[^}]*\}))?.*$/, { token: '', next: '@codeblockmdc', nextEmbedded: '$1' }],
 
       // block components
       [/^\s*(:{2,})([\w-]+)/, 'tag', '@componentWithData'],
 
       // markup within lines
-      { include: '@linecontent' }
+      { include: '@linecontent' },
 
     ],
 
     componentWithData: [
-      [/{/, 'tag', '@attributes'],
+      [/\{/, 'tag', '@attributes'],
       [/^\s*---\s*$/, { token: '', next: '@componentData', nextEmbedded: 'yaml' }],
-      [/^\s*::+\s*$/, 'tag', '@pop'],
-      { include: '@component' }
+      [/^\s*:{2,}\s*$/, 'tag', '@pop'],
+      { include: '@component' },
     ],
 
     component: [
       // #slots
-      [/^\s*#[\w_-]*\s*$/, 'attribute.name.html'],
-      { include: '@markdown' }
+      [/^\s*#[\w-]*\s*$/, 'attribute.name.html'],
+      { include: '@markdown' },
     ],
 
     componentData: [
       [/^\s*---\s*$/, { token: '', next: '@pop', nextEmbedded: '@pop', bracket: '@close' }],
-      [/.*$/, 'variable.source']
+      [/.*$/, 'variable.source'],
     ],
 
     attributes: [
       // class|id
       [/[^}=][^\s=}]*[\s.#]*/, 'attribute.name.html'],
-      [/[^}=][^\s=}]*(})/, ['attribute.name.html', { token: 'tag', next: '@pop' }]],
+      [/[^}=][^\s=}]*(\})/, ['attribute.name.html', { token: 'tag', next: '@pop' }]],
       [/(=)("[^"]*"|[^"\s=}]*)/, ['', 'string.html']],
-      [/}/, 'tag', '@pop']
+      [/\}/, 'tag', '@pop'],
     ],
 
     codeblock: [
       [/^\s*~~~\s*$/, { token: '', next: '@pop' }],
       [/^\s*```\s*$/, { token: '', next: '@pop' }],
-      [/.*$/, 'variable.source']
+      [/.*$/, 'variable.source'],
     ],
 
     // github style code blocks
     codeblockgh: [
       [/```\s*$/, { token: '', next: '@pop', nextEmbedded: '@pop' }],
-      [/[^`]+/, 'variable.source']
+      [/[^`]+/, 'variable.source'],
     ],
 
     // github style code blocks
     codeblockmdc: [
       [/```\s*$/, { token: '', next: '@pop', nextEmbedded: '@pop' }],
-      [/[^`]+/, 'string']
+      [/[^`]+/, 'string'],
     ],
 
     headercontent: [
       [/^/, 'keyword', '@pop'], // go back to markdown mode if we find a newline
-      [/((?:[^\\#]|@escapes)+)((?:#+)?)/, 'keyword'], // header text
-      { include: '@linecontent' }
+      [/((?:[^\\#]|@escapes)+)(#*)/, 'keyword'], // header text
+      { include: '@linecontent' },
     ],
 
     linecontent: [
@@ -165,24 +166,24 @@ export const language = <languages.IMonarchLanguage>{
       [/`([^\\`]|@escapes)+`/, 'variable'],
 
       // links
-      [/^{+[^}]*\}+/, 'string.link'],
-      [/[^*_)\]]\{+[^}]*\}+/, 'string.link'],
+      [/^\{[^}]*\}+/, 'string.link'],
+      [/[^*_)\]]\{[^}]*\}+/, 'string.link'],
       [/(!?\[)((?:[^\]\\]|@escapes)*)(\]\([^)]+\))/, ['string.link', '', 'string.link']],
       // [/(!?\[)((?:[^\]\\]|@escapes)*)(\])/, 'string.link'],
 
       [/\{/, { token: 'tag', next: '@attributes' }],
 
       // :block{#attribute}
-      [/(:)([\w-]+)({)/, ['tag', 'tag', { token: 'tag', next: '@attributes' }]],
+      [/(:)([\w-]+)(\{)/, ['tag', 'tag', { token: 'tag', next: '@attributes' }]],
       // :block
       [/(:)([\w-]+)/, ['tag', 'tag']],
 
       // [span]
-      [/(\[)([^\]]*)(\])({)/, ['string.link', '', 'string.link', { token: 'tag', next: '@attributes' }]],
+      [/(\[)([^\]]*)(\])(\{)/, ['string.link', '', 'string.link', { token: 'tag', next: '@attributes' }]],
       [/(\[)([^\]]*)(\])/, ['string.link', '', 'string.link']],
 
       // or html
-      { include: 'html' }
+      { include: 'html' },
     ],
 
     // Note: it is tempting to rather switch to the real HTML mode instead of building our own here
@@ -196,19 +197,19 @@ export const language = <languages.IMonarchLanguage>{
       [/<(\w+)/, {
         cases: {
           '@empty': { token: 'tag', next: '@tag.$1' },
-          '@default': { token: 'tag', next: '@tag.$1' }
-        }
+          '@default': { token: 'tag', next: '@tag.$1' },
+        },
       }],
       [/<\/(\w+)\s*>/, { token: 'tag' }],
 
-      [/<!--/, 'comment', '@comment']
+      [/<!--/, 'comment', '@comment'],
     ],
 
     comment: [
       [/[^<-]+/, 'comment.content'],
       [/-->/, 'comment', '@pop'],
       [/<!--/, 'comment.content.invalid'],
-      [/[<-]/, 'comment.content']
+      [/[<-]/, 'comment.content'],
     ],
 
     // Almost full HTML tag matching, complete with embedded scripts & styles
@@ -228,25 +229,25 @@ export const language = <languages.IMonarchLanguage>{
           '$S2==style': { token: 'tag', switchTo: 'embeddedStyle', nextEmbedded: 'text/css' },
           '$S2==script': {
             cases: {
-              $S3: { token: 'tag', switchTo: 'embeddedScript', nextEmbedded: '$S3' },
-              '@default': { token: 'tag', switchTo: 'embeddedScript', nextEmbedded: 'text/javascript' }
-            }
+              '$S3': { token: 'tag', switchTo: 'embeddedScript', nextEmbedded: '$S3' },
+              '@default': { token: 'tag', switchTo: 'embeddedScript', nextEmbedded: 'text/javascript' },
+            },
           },
-          '@default': { token: 'tag', next: '@pop' }
-        }
-      }]
+          '@default': { token: 'tag', next: '@pop' },
+        },
+      }],
     ],
 
     embeddedStyle: [
       [/[^<]+/, ''],
       [/<\/style\s*>/, { token: '@rematch', next: '@pop', nextEmbedded: '@pop' }],
-      [/</, '']
+      [/</, ''],
     ],
 
     embeddedScript: [
       [/[^<]+/, ''],
       [/<\/script\s*>/, { token: '@rematch', next: '@pop', nextEmbedded: '@pop' }],
-      [/</, '']
-    ]
-  }
+      [/</, ''],
+    ],
+  },
 }

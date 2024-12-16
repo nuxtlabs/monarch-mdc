@@ -10,26 +10,19 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite -c playground/vite.config.js",
+    "dev": "nuxi dev playground",
     "lint": "eslint .",
     "build": "unbuild",
     "release": "release-it"
   },
   "devDependencies": {
-    "@antfu/utils": "^0.7.6",
-    "@nuxt/eslint-config": "^0.2.0",
-    "@vitejs/plugin-vue": "^4.3.4",
-    "@vue/compiler-sfc": "^3.3.4",
-    "@vueuse/core": "^10.4.1",
-    "eslint": "^8.48.0",
-    "monaco-editor": "^0.41.0",
-    "monaco-editor-core": "^0.41.0",
-    "release-it": "^16.1.5",
-    "unbuild": "^2.0.0",
-    "vite": "^4.4.9",
-    "vue": "^3.3.4"
+    "@nuxt/eslint-config": "^0.7.3",
+    "eslint": "^9.17.0",
+    "monaco-editor-core": "^0.52.2",
+    "release-it": "^17.10.0",
+    "unbuild": "^3.0.1"
   },
-  "packageManager": "pnpm@8.7.4",
+  "packageManager": "pnpm@9.15.0",
   "release-it": {
     "git": {
       "commitMessage": "chore(release): release v${version}"

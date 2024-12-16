@@ -1,20 +1,5 @@
-<template>
-  <div
-    class="h-full default-theme"
-    :push-other-panes="false"
-  >
-    <Editor
-      class="editor"
-      :file="currentFile"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref } from 'vue'
-import Editor from './components/Editor.vue'
-
-const currentFile = ref(`---
+const source = ref(`---
 key: value
 ---
 <!--
@@ -130,7 +115,17 @@ This is **default slot**
 The content
 ::
 
-`
-)
-
+`)
 </script>
+
+<template>
+  <Editor
+    v-model:code="source"
+    class="h-screen w-screen"
+  />
+</template>
+
+<style>
+@import "tailwindcss";
+@import "@nuxt/ui";
+</style>
