@@ -10,6 +10,8 @@ Integrate MDC syntax with Monaco Editor.
 ## Installation
 
 ```bash
+#using pnpm
+pnpm add @nuxtlabs/monarch-mdc
 #using yarn
 yarn add @nuxtlabs/monarch-mdc
 # using npm
@@ -20,11 +22,19 @@ npm install @nuxtlabs/monarch-mdc
 
 ```js
 import * as monaco from 'monaco-editor'
-import { language as markdownLanguage } from '@nuxtlabs/monarch-mdc'
+import { language as markdownLanguage, formatter as markdownFormatter } from '@nuxtlabs/monarch-mdc'
 
 // Register language
 monaco.languages.register({ id: 'mdc' })
 monaco.languages.setMonarchTokensProvider('mdc', markdownLanguage);
+
+// Register formatter
+monaco.languages.registerDocumentFormattingEditProvider('mdc', {
+  provideDocumentFormattingEdits: (model) => [{
+    range: model.getFullModelRange(),
+    text: formatter(model.getValue()),
+  }],
+});
 
 
 const code = `
@@ -41,7 +51,7 @@ const model = monaco.editor.createModel(
 const el = ... // DOM element
 const editor = monaco.editor.create(el, {
   model,
-  // Monaco edito options
+  // Monaco editor options
   // see: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.editor.istandaloneeditorconstructionoptions.html
 })
 ```
