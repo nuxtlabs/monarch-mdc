@@ -8,7 +8,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import loader from '@monaco-editor/loader'
-import { language as mdc } from '../../src/index'
+import { language as mdc, formatter as mdcFormatter } from '../../src/index'
 
 const props = defineProps({
   code: {
@@ -35,6 +35,14 @@ onMounted(async () => {
   // Register the MDC language
   monaco.languages.register({ id: 'mdc' })
   monaco.languages.setMonarchTokensProvider('mdc', mdc)
+
+  // Register formatter
+  monaco.languages.registerDocumentFormattingEditProvider('mdc', {
+    provideDocumentFormattingEdits: model => [{
+      range: model.getFullModelRange(),
+      text: mdcFormatter(model.getValue()),
+    }],
+  })
 
   editor = monaco.editor.create(editorContainer.value, {
     value: props.code,
