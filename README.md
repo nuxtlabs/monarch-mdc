@@ -32,7 +32,7 @@ monaco.languages.setMonarchTokensProvider('mdc', markdownLanguage);
 monaco.languages.registerDocumentFormattingEditProvider('mdc', {
   provideDocumentFormattingEdits: (model) => [{
     range: model.getFullModelRange(),
-    text: formatter(model.getValue()),
+    text: markdownFormatter(model.getValue()),
   }],
 });
 
