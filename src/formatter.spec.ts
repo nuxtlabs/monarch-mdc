@@ -4,25 +4,22 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import formatMDC from './formatter'
+import { formatter } from './formatter'
 
 describe('MDC Formatter', () => {
   describe('Block Components', () => {
     it('formats single block component with content', () => {
-      const input
-= `::button
+      const input = `::button
   content
 ::`
-      const expected
-= `::button
+      const expected = `::button
 content
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats nested block components', () => {
-      const input
-= `::page-section
+      const input = `::page-section
 # This is a header
 
 ::container
@@ -31,8 +28,7 @@ This is nested content.
 
 More outer content.
 ::`
-      const expected
-= `::page-section
+      const expected = `::page-section
 # This is a header
 
   ::container
@@ -41,12 +37,11 @@ More outer content.
 
 More outer content.
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats nested block components and inline components', () => {
-      const input
-= `::page-section
+      const input = `::page-section
 # This is a header
 
 ::container
@@ -61,8 +56,7 @@ This is nested another level
 
 More outer content.
 ::`
-      const expected
-= `::page-section
+      const expected = `::page-section
 # This is a header
 
   ::container
@@ -77,7 +71,7 @@ More outer content.
 
 More outer content.
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 
@@ -85,46 +79,41 @@ More outer content.
     it('formats simple inline component', () => {
       const input = ':icon'
       const expected = ':icon'
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats simple inline component with props', () => {
       const input = ':icon{ name="mdi:github" }'
       const expected = ':icon{ name="mdi:github" }'
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats top-level inline component', () => {
-      const input
-= `# This is a header
+      const input = `# This is a header
 
   :icon
 `
-      const expected
-= `# This is a header
+      const expected = `# This is a header
 
 :icon
 `
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats top-level inline component with props', () => {
-      const input
-= `# This is a header
+      const input = `# This is a header
 
   :icon{ name="mdi:github" }
 `
-      const expected
-= `# This is a header
+      const expected = `# This is a header
 
 :icon{ name="mdi:github" }
 `
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats a nested inline component with props', () => {
-      const input
-= `# This is a header
+      const input = `# This is a header
 
 ::container
   Container content.
@@ -132,8 +121,7 @@ More outer content.
 :icon{ name="mdi:github" }
 ::
 `
-      const expected
-= `# This is a header
+      const expected = `# This is a header
 
 ::container
 Container content.
@@ -141,14 +129,13 @@ Container content.
 :icon{ name="mdi:github" }
 ::
 `
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 
   describe('YAML Frontmatter', () => {
     it('formats simple YAML block', () => {
-      const input
-= `::page-section
+      const input = `::page-section
 ---
 background-color: "red"
 image:
@@ -156,8 +143,7 @@ image:
 ---
 Slot content.
 ::`
-      const expected
-= `::page-section
+      const expected = `::page-section
 ---
 background-color: "red"
 image:
@@ -165,12 +151,11 @@ image:
 ---
 Slot content.
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats a nested block component with YAML nested props', () => {
-      const input
-= `::page-section
+      const input = `::page-section
 :::container
 ---
 image:
@@ -179,8 +164,7 @@ image:
 Slot content.
 :::
 ::`
-      const expected
-= `::page-section
+      const expected = `::page-section
   :::container
   ---
   image:
@@ -189,12 +173,11 @@ Slot content.
   Slot content.
   :::
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats YAML with multiline strings', () => {
-      const input
-= `::page-section
+      const input = `::page-section
 ---
 styles: |
   color: red;
@@ -204,8 +187,7 @@ styles: |
   }
 ---
 ::`
-      const expected
-= `::page-section
+      const expected = `::page-section
 ---
 styles: |
   color: red;
@@ -215,12 +197,11 @@ styles: |
   }
 ---
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('formats nested block components with YAML and multiline strings', () => {
-      const input
-= `::page-section
+      const input = `::page-section
 :::container
 ---
 styles: |
@@ -232,8 +213,7 @@ color: red;
 ---
 :::
 ::`
-      const expected
-= `::page-section
+      const expected = `::page-section
   :::container
   ---
   styles: |
@@ -245,14 +225,13 @@ color: red;
   ---
   :::
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 
   describe('Mixed Content', () => {
     it('formats complex nested structure', () => {
-      const input
-= `::container
+      const input = `::container
 ---
 background-color: "#eee"
 padding: "20px"
@@ -303,8 +282,7 @@ This is the alert message.
 Another paragraph below the alert.
 :::
 ::`
-      const expected
-= `::container
+      const expected = `::container
 ---
 background-color: "#eee"
 padding: "20px"
@@ -355,14 +333,13 @@ padding: "20px"
   Another paragraph below the alert.
   :::
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 
   describe('Code Blocks', () => {
     it('preserves empty lines in code blocks', () => {
-      const input
-= `::container
+      const input = `::container
 \`\`\`js
 function test() {
 
@@ -371,8 +348,7 @@ function test() {
 }
 \`\`\`
 ::`
-      const expected
-= `::container
+      const expected = `::container
 \`\`\`js
 function test() {
 
@@ -381,12 +357,11 @@ function test() {
 }
 \`\`\`
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
 
     it('handles deeply nested code blocks', () => {
-      const input
-= `::container
+      const input = `::container
 :::child
 ::::grand-child
 \`\`\`js
@@ -397,8 +372,7 @@ if (true) {
 ::::
 :::
 ::`
-      const expected
-= `::container
+      const expected = `::container
   :::child
     ::::grand-child
     \`\`\`js
@@ -409,14 +383,13 @@ if (true) {
     ::::
   :::
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 
   describe('Complex YAML', () => {
     it('handles multiple multiline strings', () => {
-      const input
-= `::container
+      const input = `::container
 :::container
 ---
 styles: >
@@ -428,8 +401,7 @@ styles: >
 ---
 :::
 ::`
-      const expected
-= `::container
+      const expected = `::container
   :::container
   ---
   styles: >
@@ -441,14 +413,13 @@ styles: >
   ---
   :::
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 
   describe('Mixed Content', () => {
     it('handles deep nesting with mixed components', () => {
-      const input
-= `::level-1
+      const input = `::level-1
 :inline1{prop="value"}
 :::level-2
 :inline2{prop="value"}
@@ -457,8 +428,7 @@ content
 ::::
 :::
 ::`
-      const expected
-= `::level-1
+      const expected = `::level-1
 :inline1{prop="value"}
   :::level-2
   :inline2{prop="value"}
@@ -467,7 +437,7 @@ content
     ::::
   :::
 ::`
-      expect(formatMDC(input)).toBe(expected)
+      expect(formatter(input)).toBe(expected)
     })
   })
 })
