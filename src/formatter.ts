@@ -11,8 +11,6 @@ interface YamlState {
   multilineMinimumIndent: number | null
 }
 
-const INDENT_SPACES = 2
-
 // Regular expressions for detecting different MDC elements
 const INDENT_REGEX = /^\s*/
 // Matches block component opening tags like "::name"
@@ -38,8 +36,12 @@ function getIndent(spaces: number): string {
  * - MDC block components
  * - MDC block component YAML frontmatter, including multiline strings
  * - Nested MDC block components
+ *
+ * @param {string} content - The raw MDC content to format
+ * @param {number} tabSize - The number of spaces to use for indentation. Defaults to `2`.
+ * @param {boolean} isFormatOnType - Whether the formatter is being used for on-type formatting. Defaults to `false`.
  */
-export const formatter = (content: string): string => {
+export const formatter = (content: string, tabSize: number = 2, isFormatOnType: boolean = false): string => {
   // Split input into lines and pre-allocate output array
   const lines = content.split('\n')
   const formattedLines = Array.from({ length: lines.length })
@@ -61,6 +63,7 @@ export const formatter = (content: string): string => {
 
   // Add new state variable at top of function
   let codeBlockBaseIndent: number | null = null
+  let codeBlockOriginalIndent: number | null = null
 
   const yamlState: YamlState = {
     baseIndent: null,
@@ -77,8 +80,12 @@ export const formatter = (content: string): string => {
     // Current component's indent level
     const parentIndent = componentIndentStack[componentIndentStack.length - 1] || 0
 
-    // Return empty lines without indentation
-    if (trimmedContent === '') {
+    /**
+     * Return empty lines without indentation if not formatting on-type.
+     * We check that `isFormatOnType === false` since this would remove indentation
+     * for the current line the user is editing.
+     */
+    if (trimmedContent === '' && !isFormatOnType) {
       formattedLines[formattedIndex++] = ''
       continue
     }
@@ -87,27 +94,31 @@ export const formatter = (content: string): string => {
     if (trimmedContent.startsWith('```')) {
       insideCodeBlock = !insideCodeBlock
       if (insideCodeBlock) {
-        // Store base indent when entering code block
-        codeBlockBaseIndent = indent
+        codeBlockBaseIndent = parentIndent
+        // Store first line's original indent as reference
+        codeBlockOriginalIndent = indent
+        formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
       }
       else {
-        // Reset when leaving code block
+        formattedLines[formattedIndex++] = getIndent(codeBlockBaseIndent!) + trimmedContent
         codeBlockBaseIndent = null
+        codeBlockOriginalIndent = null
       }
-      formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
       continue
     }
 
-    // Preserve indentation inside code blocks
-    if (insideCodeBlock) {
-      if (trimmedContent === '') {
+    // Handle code block content
+    if (insideCodeBlock && codeBlockBaseIndent !== null) {
+      if (trimmedContent === '' && !isFormatOnType) {
         formattedLines[formattedIndex++] = ''
         continue
       }
-      // Calculate relative indent from code block's base
-      const relativeIndent = indent - (codeBlockBaseIndent || 0)
-      // Add parent indent to preserve relative structure
-      formattedLines[formattedIndex++] = getIndent(parentIndent + relativeIndent) + trimmedContent
+
+      // Calculate relative indentation from original position
+      const originalOffset = indent - (codeBlockOriginalIndent || 0)
+      // Add this offset to the required base indentation
+      const finalIndent = codeBlockBaseIndent + originalOffset
+      formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
       continue
     }
 
@@ -128,7 +139,7 @@ export const formatter = (content: string): string => {
       // Save current indent level for nested components
       componentIndentStack.push(currentIndent)
       // Increase indent for component content
-      currentIndent += INDENT_SPACES
+      currentIndent += tabSize
       continue
     }
 
@@ -141,32 +152,58 @@ export const formatter = (content: string): string => {
     }
 
     // Process YAML block content
-    if (insideYamlBlock && trimmedContent) {
-      // Handle start of multiline string (using | or > indicators)
-      if (MULTILINE_STRING_REGEX.test(trimmedContent)) {
-        insideMultilineString = true
-        // Store original indent level
-        yamlState.multilineBaseIndent = indent
-        // Ensure minimum INDENT_SPACES space indent
-        yamlState.multilineMinimumIndent = parentIndent + INDENT_SPACES
-        formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
-        continue
-      }
+    if (insideYamlBlock) {
+      if (trimmedContent) {
+        // Check if we're exiting a multiline string
+        if (insideMultilineString && indent === yamlState.baseIndent && trimmedContent.includes(':')) {
+          insideMultilineString = false
+          yamlState.multilineBaseIndent = null
+          yamlState.multilineMinimumIndent = null
+        }
 
-      // Handle content within multiline strings
-      if (insideMultilineString && yamlState.multilineBaseIndent !== null) {
-        // Calculate relative indentation from original multiline base
-        const relativeIndent = indent - yamlState.multilineBaseIndent
-        // Ensure minimum indent while preserving relative structure
-        const finalIndent = Math.max(yamlState.multilineMinimumIndent!, parentIndent + relativeIndent)
-        formattedLines[formattedIndex++] = getIndent(finalIndent) + line.slice(indent)
-        continue
-      }
+        // Handle start of multiline string (using | or > indicators)
+        if (MULTILINE_STRING_REGEX.test(trimmedContent)) {
+          insideMultilineString = true
+          // Store original indent level
+          yamlState.multilineBaseIndent = indent
+          // Ensure minimum tabSize space indent
+          yamlState.multilineMinimumIndent = parentIndent + tabSize
+          formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
+          continue
+        }
 
-      if (yamlState.baseIndent !== null) {
-        const relativeIndent = indent - yamlState.baseIndent
-        formattedLines[formattedIndex++] = getIndent(parentIndent + relativeIndent) + trimmedContent
-        continue
+        // Handle content within multiline strings
+        if (insideMultilineString && yamlState.multilineBaseIndent !== null) {
+          // Calculate relative indentation from original multiline base
+          const relativeIndent = indent - yamlState.multilineBaseIndent
+          // Ensure minimum indent while preserving relative structure
+          const finalIndent = Math.max(yamlState.multilineMinimumIndent!, parentIndent + relativeIndent)
+          formattedLines[formattedIndex++] = getIndent(finalIndent) + line.slice(indent)
+          continue
+        }
+
+        // Adjust indentation for YAML block content based on the base indent level
+        if (yamlState.baseIndent !== null) {
+          const relativeIndent = indent - yamlState.baseIndent
+          formattedLines[formattedIndex++] = getIndent(parentIndent + relativeIndent) + trimmedContent
+          continue
+        }
+      }
+      else {
+        // Indent empty lines at the same level as the previous line
+        if (isFormatOnType) {
+          // If inside a multiline string, ensure minimum indentation
+          if (insideMultilineString) {
+            const finalIndent = Math.max((yamlState.multilineMinimumIndent || 0), indent)
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + ''
+            continue
+          }
+          else {
+            // Otherwise, use the current line's indentation
+            formattedLines[formattedIndex++] = getIndent(indent) + ''
+            continue
+          }
+        }
       }
     }
 

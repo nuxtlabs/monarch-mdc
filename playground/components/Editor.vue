@@ -40,7 +40,17 @@ onMounted(async () => {
   monaco.languages.registerDocumentFormattingEditProvider('mdc', {
     provideDocumentFormattingEdits: model => [{
       range: model.getFullModelRange(),
-      text: mdcFormatter(model.getValue()),
+      text: mdcFormatter(model.getValue(), 2),
+    }],
+  })
+  // Register format on type provider
+  monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
+    // Auto-format when the user types a newline character.
+    autoFormatTriggerCharacters: ['\n'],
+    provideOnTypeFormattingEdits: model => [{
+      range: model.getFullModelRange(),
+      // We pass `true` as the third parameter to indicate isFormatOnType
+      text: mdcFormatter(model.getValue(), 2, true),
     }],
   })
 
@@ -63,6 +73,8 @@ onMounted(async () => {
     bracketPairColorization: {
       enabled: true,
     },
+    tabSize: 2,
+    insertSpaces: true, // insert spaces when pressing Tab
     formatOnPaste: true,
     formatOnType: true,
   })

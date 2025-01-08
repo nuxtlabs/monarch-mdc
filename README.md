@@ -30,9 +30,20 @@ monaco.languages.setMonarchTokensProvider('mdc', markdownLanguage);
 
 // Register formatter
 monaco.languages.registerDocumentFormattingEditProvider('mdc', {
-  provideDocumentFormattingEdits: (model) => [{
+  provideDocumentFormattingEdits: model => [{
     range: model.getFullModelRange(),
-    text: markdownFormatter(model.getValue()),
+    text: mdcFormatter(model.getValue(), 2),
+  }],
+});
+
+// Register format on type provider
+monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
+  // Auto-format when the user types a newline character.
+  autoFormatTriggerCharacters: ['\n'],
+  provideOnTypeFormattingEdits: model => [{
+    range: model.getFullModelRange(),
+    // We pass `true` as the third parameter to indicate isFormatOnType
+    text: mdcFormatter(model.getValue(), 2, true),
   }],
 });
 
@@ -51,7 +62,10 @@ const model = monaco.editor.createModel(
 const el = ... // DOM element
 const editor = monaco.editor.create(el, {
   model,
-  // Monaco editor options
+  tabSize: 2,
+  insertSpaces: true, // insert spaces when pressing Tab
+  formatOnType: true, // Add to enable automatic formatting as the user types.
+  // Other Monaco Editor options
   // see: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.editor.istandaloneeditorconstructionoptions.html
 })
 ```
