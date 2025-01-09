@@ -59,7 +59,8 @@ If you'd like to integrate MDC formatting into your Monaco Editor instance, you 
 1. The `registerDocumentFormattingEditProvider` below registers the document format provider which enables the "Format Document" action in the editor's Command Palette along with the built-in keyboard shortcut.
 2. You can also enable the `registerOnTypeFormattingEditProvider` along with the `formatOnType: true` config setting to auto-format the document as the user types. The `autoFormatTriggerCharacters` property allows you to customize the characters that trigger auto-formatting in your editor instance. Below, it is configured to a newline character `/n`, but feel free to customize the options for your project.
 
-Since the format provider utilizes spaces for indention, we will also add a few extra configuration properties to the Monaco Editor instance below.
+> [!Note]
+> Since the format provider utilizes spaces for indention, we will also add a few **required** configuration properties to the Monaco Editor instance below.
 
 ```js
 import * as monaco from 'monaco-editor'
