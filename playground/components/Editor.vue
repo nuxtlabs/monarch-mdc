@@ -36,12 +36,15 @@ onMounted(async () => {
   monaco.languages.register({ id: 'mdc' })
   monaco.languages.setMonarchTokensProvider('mdc', mdc)
 
+  // Define your desired Tab size
+  const TAB_SIZE = 2
+
   // Register formatter
   monaco.languages.registerDocumentFormattingEditProvider('mdc', {
     provideDocumentFormattingEdits: model => [{
       range: model.getFullModelRange(),
       text: mdcFormatter(model.getValue(), {
-        tabSize: 2,
+        tabSize: TAB_SIZE,
       }),
     }],
   })
@@ -53,7 +56,7 @@ onMounted(async () => {
       range: model.getFullModelRange(),
       // We pass `true` to `isFormatOnType` to indicate formatOnType is being called.
       text: mdcFormatter(model.getValue(), {
-        tabSize: 2,
+        tabSize: TAB_SIZE,
         isFormatOnType: true,
       }),
     }],
@@ -78,10 +81,11 @@ onMounted(async () => {
     bracketPairColorization: {
       enabled: true,
     },
-    tabSize: 2,
-    insertSpaces: true, // insert spaces when pressing Tab
+    tabSize: TAB_SIZE, // Utilize the same tabSize used in the format providers
+    detectIndentation: false, // Important as to not override tabSize
+    insertSpaces: true, // Since the formatter utilizes spaces, we set to true to insert spaces when pressing Tab
+    formatOnType: true, // Add to enable automatic formatting as the user types.
     formatOnPaste: true,
-    formatOnType: true,
   })
 
   editor.onDidChangeModelContent(() => {
