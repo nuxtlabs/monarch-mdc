@@ -48,8 +48,9 @@ function getIndent(spaces: number): string {
  * - Nested MDC block components
  *
  * @param {string} content - The raw MDC content to format
- * @param {number} tabSize - The number of spaces to use for indentation. Defaults to `2`.
- * @param {boolean} isFormatOnType - Whether the formatter is being used for on-type formatting. Defaults to `false`.
+ * @param {FormatterOptions} options - The formatter options
+ * @param {number} options.tabSize - The number of spaces to use for indentation. Defaults to `2`.
+ * @param {boolean} options.isFormatOnType - Whether the formatter is being used for on-type formatting. Defaults to `false`.
  */
 export const formatter = (content: string, { tabSize = 2, isFormatOnType = false }: FormatterOptions): string => {
   // Split input into lines and pre-allocate output array
