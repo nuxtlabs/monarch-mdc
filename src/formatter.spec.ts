@@ -15,7 +15,7 @@ describe('MDC Formatter', () => {
       const expected = `::button
 content
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats nested block components', () => {
@@ -37,7 +37,7 @@ More outer content.
 
 More outer content.
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats nested block components and inline components', () => {
@@ -71,7 +71,7 @@ More outer content.
 
 More outer content.
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 
@@ -79,13 +79,13 @@ More outer content.
     it('formats simple inline component', () => {
       const input = ':icon'
       const expected = ':icon'
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats simple inline component with props', () => {
       const input = ':icon{ name="mdi:github" }'
       const expected = ':icon{ name="mdi:github" }'
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats top-level inline component', () => {
@@ -97,7 +97,7 @@ More outer content.
 
 :icon
 `
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats top-level inline component with props', () => {
@@ -109,7 +109,7 @@ More outer content.
 
 :icon{ name="mdi:github" }
 `
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats a nested inline component with props', () => {
@@ -129,7 +129,7 @@ Container content.
 :icon{ name="mdi:github" }
 ::
 `
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 
@@ -151,7 +151,7 @@ image:
 ---
 Slot content.
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats a nested block component with YAML nested props', () => {
@@ -173,7 +173,7 @@ Slot content.
   Slot content.
   :::
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats YAML with multiline strings', () => {
@@ -197,7 +197,7 @@ styles: |
   }
 ---
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('formats nested block components with YAML and multiline strings', () => {
@@ -233,7 +233,7 @@ styles: |
   ---
   :::
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 
@@ -341,7 +341,7 @@ padding: "20px"
   Another paragraph below the alert.
   :::
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 
@@ -365,7 +365,7 @@ function test() {
 }
 \`\`\`
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
 
     it('handles deeply nested code blocks', () => {
@@ -391,7 +391,7 @@ if (true) {
     ::::
   :::
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 
@@ -421,7 +421,7 @@ styles: >
   ---
   :::
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 
@@ -445,7 +445,7 @@ content
     ::::
   :::
 ::`
-      expect(formatter(input, 2)).toBe(expected)
+      expect(formatter(input, { tabSize: 2 })).toBe(expected)
     })
   })
 })

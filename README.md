@@ -32,7 +32,9 @@ monaco.languages.setMonarchTokensProvider('mdc', markdownLanguage);
 monaco.languages.registerDocumentFormattingEditProvider('mdc', {
   provideDocumentFormattingEdits: model => [{
     range: model.getFullModelRange(),
-    text: mdcFormatter(model.getValue(), 2),
+    text: mdcFormatter(model.getValue(), {
+      tabSize: 2,
+    }),
   }],
 });
 
@@ -42,8 +44,11 @@ monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
   autoFormatTriggerCharacters: ['\n'],
   provideOnTypeFormattingEdits: model => [{
     range: model.getFullModelRange(),
-    // We pass `true` as the third parameter to indicate isFormatOnType
-    text: mdcFormatter(model.getValue(), 2, true),
+    // We pass `true` to `isFormatOnType` to indicate formatOnType is being called.
+    text: mdcFormatter(model.getValue(), {
+      tabSize: 2,
+      isFormatOnType: true,
+    }),
   }],
 });
 

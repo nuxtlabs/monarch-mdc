@@ -1,4 +1,14 @@
 /**
+ * Formatter Options
+ */
+interface FormatterOptions {
+  /** The number of spaces to use for indentation. Defaults to `2`. */
+  tabSize?: number
+  /** Whether the formatter is being used for on-type formatting. Defaults to `false`. */
+  isFormatOnType?: boolean
+}
+
+/**
  * Tracks YAML block state including base indentation and
  * special handling for multiline string content
  */
@@ -41,7 +51,7 @@ function getIndent(spaces: number): string {
  * @param {number} tabSize - The number of spaces to use for indentation. Defaults to `2`.
  * @param {boolean} isFormatOnType - Whether the formatter is being used for on-type formatting. Defaults to `false`.
  */
-export const formatter = (content: string, tabSize: number = 2, isFormatOnType: boolean = false): string => {
+export const formatter = (content: string, { tabSize = 2, isFormatOnType = false }: FormatterOptions): string => {
   // Split input into lines and pre-allocate output array
   const lines = content.split('\n')
   const formattedLines = Array.from({ length: lines.length })
