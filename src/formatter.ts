@@ -60,9 +60,9 @@ export const formatter = (content: string, tabSize: number = 2, isFormatOnType: 
   let insideCodeBlock = false
   // Current position in output array
   let formattedIndex = 0
-
-  // Add new state variable at top of function
+  // Base indent for the current markdown code block
   let codeBlockBaseIndent: number | null = null
+  // The original indent of the markdown code block line
   let codeBlockOriginalIndent: number | null = null
 
   const yamlState: YamlState = {
