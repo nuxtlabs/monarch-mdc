@@ -54,13 +54,13 @@ const editor = monaco.editor.create(el, {
 
 ### Formatter
 
-If you'd like to integrate MDC formatting into your Monaco Editor instance, you can also register the formatter provider. The initial setup looks the similar as above for the language syntax, but we'll also register a set or formatting providers.
+If you'd like to integrate MDC formatting into your Monaco Editor instance, you can also register the document format provider. The initial setup looks similar, but we'll also register a set of formatting providers and some additional editor instance config options.
 
-1. The `registerDocumentFormattingEditProvider` below registers the document format provider which enables the "Format Document" action in the editor's Command Palette along with the built-in keyboard shortcut.
-2. You can also enable the `registerOnTypeFormattingEditProvider` along with the `formatOnType: true` config setting to auto-format the document as the user types. The `autoFormatTriggerCharacters` property allows you to customize the characters that trigger auto-formatting in your editor instance. Below, it is configured to a newline character `/n`, but feel free to customize the options for your project.
+1. The `registerDocumentFormattingEditProvider` registers the document format provider which enables the "Format Document" action in the editor's Command Palette along with the built-in keyboard shortcut.
+2. You can also enable the `registerOnTypeFormattingEditProvider` along with enabling the `formatOnType` config setting to auto-format the document as the user types. The `autoFormatTriggerCharacters` property allows you to customize the characters that trigger auto-formatting in your editor instance. Below, it is configured to a newline character `/n`, but feel free to customize the options for your project.
 
 > [!Note]
-> Since the format provider utilizes spaces for indention, we will also add a few **required** configuration properties to the Monaco Editor instance below.
+> Since the format provider utilizes spaces for indention, we will also configure the editor to insert spaces for tabs.
 
 ```js
 import * as monaco from 'monaco-editor'
