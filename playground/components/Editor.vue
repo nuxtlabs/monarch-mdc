@@ -8,7 +8,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import loader from '@monaco-editor/loader'
-import { language as mdc } from '../../src/index'
+import { language as mdc, formatter as mdcFormatter } from '../../src/index'
 
 const props = defineProps({
   code: {
@@ -36,6 +36,32 @@ onMounted(async () => {
   monaco.languages.register({ id: 'mdc' })
   monaco.languages.setMonarchTokensProvider('mdc', mdc)
 
+  // Define your desired Tab size
+  const TAB_SIZE = 2
+
+  // Register formatter
+  monaco.languages.registerDocumentFormattingEditProvider('mdc', {
+    provideDocumentFormattingEdits: model => [{
+      range: model.getFullModelRange(),
+      text: mdcFormatter(model.getValue(), {
+        tabSize: TAB_SIZE,
+      }),
+    }],
+  })
+  // Register format on type provider
+  monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
+    // Auto-format when the user types a newline character.
+    autoFormatTriggerCharacters: ['\n'],
+    provideOnTypeFormattingEdits: model => [{
+      range: model.getFullModelRange(),
+      // We pass `true` to `isFormatOnType` to indicate formatOnType is being called.
+      text: mdcFormatter(model.getValue(), {
+        tabSize: TAB_SIZE,
+        isFormatOnType: true,
+      }),
+    }],
+  })
+
   editor = monaco.editor.create(editorContainer.value, {
     value: props.code,
     language: props.language,
@@ -55,8 +81,11 @@ onMounted(async () => {
     bracketPairColorization: {
       enabled: true,
     },
+    tabSize: TAB_SIZE, // Utilize the same tabSize used in the format providers
+    detectIndentation: false, // Important as to not override tabSize
+    insertSpaces: true, // Since the formatter utilizes spaces, we set to true to insert spaces when pressing Tab
+    formatOnType: true, // Add to enable automatic formatting as the user types.
     formatOnPaste: true,
-    formatOnType: true,
   })
 
   editor.onDidChangeModelContent(() => {
