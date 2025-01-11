@@ -1,5 +1,16 @@
 import type { languages, editor } from 'monaco-editor-core'
 
+/**
+ * Provides folding ranges for the MDC language in the Monaco editor.
+ *
+ * @param {monaco.editor.ITextModel} model - The text model to provide folding ranges for.
+ * @returns {languages.ProviderResult<languages.FoldingRange[]>} An array of folding ranges for the editor.
+ *
+ * The function identifies folding ranges based on:
+ * - Custom block components defined by start tags (e.g., "::container" or ":::button")
+ *   and end tags (e.g., "::" or ":::" with matching opening tag level).
+ * - Markdown code blocks delimited by triple backticks (```) or tildes (~~~).
+ */
 export const foldingProvider = (model: editor.ITextModel): languages.ProviderResult<languages.FoldingRange[]> => {
   const ranges = [] // Array to store folding ranges
   const stack = [] // Stack to manage nested block components
