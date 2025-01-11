@@ -8,7 +8,11 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import loader from '@monaco-editor/loader'
-import { language as mdc, formatter as mdcFormatter } from '../../src/index'
+import {
+  language as mdc,
+  formatter as mdcFormatter,
+  foldingProvider as mdcFoldingProvider,
+} from '../../src/index'
 
 const props = defineProps({
   code: {
@@ -48,6 +52,7 @@ onMounted(async () => {
       }),
     }],
   })
+
   // Register format on type provider
   monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
     // Auto-format when the user types a newline character.
@@ -60,6 +65,11 @@ onMounted(async () => {
         isFormatOnType: true,
       }),
     }],
+  })
+
+  // Register code folding provider
+  monaco.languages.registerFoldingRangeProvider('mdc', {
+    provideFoldingRanges: model => mdcFoldingProvider(model),
   })
 
   editor = monaco.editor.create(editorContainer.value, {
@@ -81,6 +91,7 @@ onMounted(async () => {
     bracketPairColorization: {
       enabled: true,
     },
+    folding: true, // Enable code folding for MDC block components
     tabSize: TAB_SIZE, // Utilize the same tabSize used in the format providers
     detectIndentation: false, // Important as to not override tabSize
     insertSpaces: true, // Since the formatter utilizes spaces, we set to true to insert spaces when pressing Tab
