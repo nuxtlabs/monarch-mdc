@@ -21,7 +21,7 @@ export const foldingProvider = (model: editor.ITextModel): languages.ProviderRes
     const line = lines[lineNumber].trim() // Remove extra whitespace
 
     // Check if the current line starts or ends a markdown code block
-    if (/^(?:`{3,}|~{3,})/.test(line)) {
+    if (/^\s*(?:`{3,}|~{3,})/.test(line)) {
       insideCodeBlock = !insideCodeBlock // Toggle code block mode
       continue // Skip further processing for this line
     }
@@ -32,7 +32,7 @@ export const foldingProvider = (model: editor.ITextModel): languages.ProviderRes
     }
 
     // Match the start tag (e.g., "::container" or ":::button")
-    const startMatch = line.match(/^:{2,}([\w-]+)/)
+    const startMatch = line.match(/^\s*:{2,}([\w-]+)/)
     if (startMatch) {
       // Push start block onto the stack
       stack.push({ start: lineNumber + 1, tagName: startMatch[1] }) // Save 1-based line number and tag name
@@ -40,7 +40,7 @@ export const foldingProvider = (model: editor.ITextModel): languages.ProviderRes
     }
 
     // Match the end tag (e.g., "::" or ":::" with matching opening tag level)
-    const endMatch = line.match(/^:{2,}$/)
+    const endMatch = line.match(/^\s*:{2,}$/)
     if (endMatch && stack.length > 0) {
       const lastBlock = stack.pop() // Retrieve the last unmatched start block
       ranges.push({
