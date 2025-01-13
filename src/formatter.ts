@@ -29,6 +29,8 @@ const COMPONENT_START_REGEX = /^\s*:{2,}[\w-]+/
 const COMPONENT_END_REGEX = /^\s*:{2,}\s*$/
 // Matches YAML multiline indicators "|" or ">"
 const MULTILINE_STRING_REGEX = /^[\w-]+:\s*[|>]/
+// Matches markdown code block opening tags like "```" or "~~~"
+const CODE_BLOCK_REGEX = /^\s*(?:`{3,}|~{3,})/
 
 /**
  * Cache for commonly used indentation strings to avoid repeated string creation
@@ -71,9 +73,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   let insideCodeBlock = false
   // Current position in output array
   let formattedIndex = 0
-  // Base indent for the current markdown code block
+
+  // Add new state variable at top of function
   let codeBlockBaseIndent: number | null = null
-  // The original indent of the markdown code block line
   let codeBlockOriginalIndent: number | null = null
 
   const yamlState: YamlState = {
@@ -101,8 +103,8 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       continue
     }
 
-    // Handle code block markers (```)
-    if (trimmedContent.startsWith('```')) {
+    // Handle code block markers (``` or ~~~)
+    if (CODE_BLOCK_REGEX.test(trimmedContent)) {
       insideCodeBlock = !insideCodeBlock
       if (insideCodeBlock) {
         codeBlockBaseIndent = parentIndent

@@ -19,7 +19,7 @@ npm install @nuxtlabs/monarch-mdc
 
 ## Usage
 
-The package provides both the MDC language syntax for the Monaco Editor, along with an optional formatter function.
+The package provides both the MDC language syntax for the Monaco Editor, along with optional formatting and code folding providers.
 
 Checkout the [Editor.vue](./playground/components/Editor.vue) for a complete example.
 
@@ -82,7 +82,7 @@ monaco.languages.registerDocumentFormattingEditProvider('mdc', {
       tabSize: TAB_SIZE,
     }),
   }],
-});
+})
 
 // Register format on type provider
 monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
@@ -96,7 +96,7 @@ monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
       isFormatOnType: true,
     }),
   }],
-});
+})
 
 const code = `
 Your **awesome** markdown
@@ -116,6 +116,43 @@ const editor = monaco.editor.create(el, {
   detectIndentation: false, // Important as to not override tabSize
   insertSpaces: true, // Since the formatter utilizes spaces, we set to true to insert spaces when pressing Tab
   formatOnType: true, // Add to enable automatic formatting as the user types.
+  // Other Monaco Editor options
+  // see: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.editor.istandaloneeditorconstructionoptions.html
+})
+```
+
+### Code Folding
+
+If you'd like to enable code folding for MDC block components into your Monaco Editor instance, you can also register the folding range provider.
+
+```js
+import * as monaco from 'monaco-editor'
+import { language as markdownLanguage, foldingProvider as markdownFoldingProvider } from '@nuxtlabs/monarch-mdc'
+
+// Register language
+monaco.languages.register({ id: 'mdc' })
+monaco.languages.setMonarchTokensProvider('mdc', markdownLanguage)
+
+// Register code folding provider
+monaco.languages.registerFoldingRangeProvider('mdc', {
+  provideFoldingRanges: model => markdownFoldingProvider(model),
+})
+
+const code = `
+Your **awesome** markdown
+`
+
+// Create monaco model
+const model = monaco.editor.createModel(
+  code,
+  'mdc'
+)
+
+// Create your editor
+const el = ... // DOM element
+const editor = monaco.editor.create(el, {
+  model,
+  folding: true, // Enable code folding for MDC block components
   // Other Monaco Editor options
   // see: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.editor.istandaloneeditorconstructionoptions.html
 })
