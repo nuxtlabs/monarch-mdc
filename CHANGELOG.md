@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.4.0
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/0.3.0...v0.4.0)
+
+### 🚀 Enhancements
+
+- Monaco editor folding range provider ([#11](https://github.com/nuxtlabs/monarch/pull/11))
+
+### ❤️ Contributors
+
+- Adam DeHaven ([@adamdehaven](http://github.com/adamdehaven))
+
 ## v0.3.0
 
 [compare changes](https://github.com/nuxtlabs/monarch/compare/0.2.0...v0.3.0)
