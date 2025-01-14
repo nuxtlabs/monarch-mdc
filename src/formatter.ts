@@ -1,4 +1,11 @@
 /**
+ * !Important: The exported `formatter` function in this file is also utilized in
+ * the `@nuxtlabs/vscode-mdc` VSCode extension https://github.com/nuxtlabs/vscode-mdc.
+ *
+ * Any changes to the function signature or behavior should be tested and verified in the extension.
+ */
+
+/**
  * Formatter Options
  */
 interface FormatterOptions {
@@ -198,7 +205,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
         // Adjust indentation for YAML block content based on the base indent level
         if (yamlState.baseIndent !== null) {
           const relativeIndent = indent - yamlState.baseIndent
-          formattedLines[formattedIndex++] = getIndent(parentIndent + relativeIndent) + trimmedContent
+          formattedLines[formattedIndex++] = getIndent(Math.max(yamlState.baseIndent, parentIndent + relativeIndent)) + trimmedContent
           continue
         }
       }

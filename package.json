@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "license": "MIT",
   "description": "Integrate MDC syntax with Monaco Editor",
-  "main": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "files": [
@@ -41,14 +41,5 @@
     "npm": {
       "publish": false
     }
-  },
-  "build": {
-    "entries": [
-      "./src/index"
-    ],
-    "externals": [
-      "monaco-editor-core"
-    ],
-    "declaration": true
   }
 }

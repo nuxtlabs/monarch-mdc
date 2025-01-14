@@ -432,6 +432,10 @@ styles: >
 :::level-2
 :inline2{prop="value"}
 ::::level-3
+---
+foo: "bar"
+  child-foo: "child-bar"
+---
 content
 ::::
 :::
@@ -441,6 +445,10 @@ content
   :::level-2
   :inline2{prop="value"}
     ::::level-3
+    ---
+    foo: "bar"
+      child-foo: "child-bar"
+    ---
     content
     ::::
   :::
