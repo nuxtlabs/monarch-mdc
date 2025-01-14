@@ -1,5 +1,6 @@
 /**
- * !Important: The exported `formatter` function in this file is also utilized in
+ * !Important: The exported `formatter` function in this file should remain unbound to monarch as it
+ * cane be used standalone to format MDC content strings. The function is also utilized in
  * the `@nuxtlabs/vscode-mdc` VSCode extension https://github.com/nuxtlabs/vscode-mdc.
  *
  * Any changes to the function signature or behavior should be tested and verified in the extension.
