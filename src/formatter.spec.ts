@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import { formatter as mdcFormatter } from './formatter'
 
-describe('MDC Formatter', () => {
+describe(`MDC Formatter`, () => {
   describe('Block Components', () => {
     it('formats single block component with content', () => {
       const input = `::button
@@ -451,6 +451,128 @@ content
     ---
     content
     ::::
+  :::
+::`
+      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+    })
+
+    it('properly formats unordered lists, ordered lists, and task lists', () => {
+      const input = `## This section contains a bunch of lists
+
+  - This is a list item.
+  - This is a list item.
+    - This is a CHILD list item.
+      - This is a GRANDCHILD list item.
+  - This is a list item.
+
+::page-section
+---
+color: "red"
+background-image:
+  url: "https://images.example.com/dog.png"
+---
+  - This is a list item.
+  - This is a list item.
+    - This is a CHILD list item.
+      - This is a GRANDCHILD list item.
+  - This is a list item.
+
+  :::container
+- This is a list item.
+- This is a list item.
+  - This is a CHILD list item.
+    - This is a GRANDCHILD list item.
+- This is a list item.
+  :::
+
+:::container
+- This is a list item.
+- This is a list item.
+  - This is a CHILD list item.
+    - This is a GRANDCHILD list item.
+- This is a list item.
+
+  ::::button
+  This is nested another level
+  ::::
+
+  ::::container
+  ---
+  color: "red"
+  background-image:
+    url: "https://images.example.com/dog.png"
+  ---
+  - This is a list item.
+  - This is a list item.
+    - This is a CHILD list item.
+      - This is a GRANDCHILD list item.
+  - This is a list item.
+
+  This content is below the list.
+  ::::
+
+:icon{ name="mdi:github" }
+
+More outer content.
+:::
+::`
+      const expected = `## This section contains a bunch of lists
+
+- This is a list item.
+- This is a list item.
+  - This is a CHILD list item.
+    - This is a GRANDCHILD list item.
+- This is a list item.
+
+::page-section
+---
+color: "red"
+background-image:
+  url: "https://images.example.com/dog.png"
+---
+- This is a list item.
+- This is a list item.
+  - This is a CHILD list item.
+    - This is a GRANDCHILD list item.
+- This is a list item.
+
+  :::container
+  - This is a list item.
+  - This is a list item.
+    - This is a CHILD list item.
+      - This is a GRANDCHILD list item.
+  - This is a list item.
+  :::
+
+  :::container
+  - This is a list item.
+  - This is a list item.
+    - This is a CHILD list item.
+      - This is a GRANDCHILD list item.
+  - This is a list item.
+
+    ::::button
+    This is nested another level
+    ::::
+
+    ::::container
+    ---
+    color: "red"
+    background-image:
+      url: "https://images.example.com/dog.png"
+    ---
+    - This is a list item.
+    - This is a list item.
+      - This is a CHILD list item.
+        - This is a GRANDCHILD list item.
+    - This is a list item.
+
+    This content is below the list.
+    ::::
+
+  :icon{ name="mdi:github" }
+
+  More outer content.
   :::
 ::`
       expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
