@@ -39,6 +39,12 @@ const COMPONENT_END_REGEX = /^\s*:{2,}\s*$/
 const MULTILINE_STRING_REGEX = /^[\w-]+:\s*[|>]/
 // Matches markdown code block opening tags like "```" or "~~~"
 const CODE_BLOCK_REGEX = /^\s*(?:`{3,}|~{3,})/
+// Matches unordered list items like "- item" or "* item"
+const UNORDERED_LIST_REGEX = /^\s*[-*]\s+/
+// Matches ordered list items like "1. item"
+const ORDERED_LIST_REGEX = /^\s*\d+\.\s+/
+// Matches task list items like "- [ ] item" or "* [x] item"
+const TASK_LIST_REGEX = /^\s*[-*]\s+\[.\]\s+/
 
 /**
  * Cache for commonly used indentation strings to avoid repeated string creation
@@ -81,6 +87,8 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   let insideCodeBlock = false
   // Current position in output array
   let formattedIndex = 0
+  // Last list item indentation level
+  let lastListIndent: number | null = null
 
   // Add new state variable at top of function
   let codeBlockBaseIndent: number | null = null
@@ -226,6 +234,25 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           }
         }
       }
+    }
+
+    // Handle markdown lists
+    if (UNORDERED_LIST_REGEX.test(trimmedContent) || ORDERED_LIST_REGEX.test(trimmedContent) || TASK_LIST_REGEX.test(trimmedContent)) {
+      // If this is the first list item or a root-level list item
+      if (lastListIndent === null || indent <= lastListIndent) {
+        lastListIndent = indent
+      }
+
+      // Calculate relative indentation from the base list level
+      const relativeIndent = indent - lastListIndent
+      // Add relative indent to the parent component's indent level
+      const finalIndent = parentIndent + relativeIndent
+
+      formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+      continue
+    }
+    else {
+      lastListIndent = null
     }
 
     formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
