@@ -29,6 +29,20 @@ interface YamlState {
   multilineMinimumIndent: number | null
 }
 
+/**
+ * Represents the state of a markdown list in the document.
+ */
+interface ListState {
+  // Parent component's indent level
+  componentLevel: number
+  // Original indent of first list item
+  baseIndent: number
+  // Track indent levels for hierarchy
+  nestingLevels: number[]
+  // Track which component owns this list
+  componentId: number
+}
+
 // Regular expressions for detecting different MDC elements
 const INDENT_REGEX = /^\s*/
 // Matches block component opening tags like "::name"
@@ -87,8 +101,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   let insideCodeBlock = false
   // Current position in output array
   let formattedIndex = 0
-  // Last list item indentation level
-  let lastListIndent: number | null = null
 
   // Add new state variable at top of function
   let codeBlockBaseIndent: number | null = null
@@ -99,6 +111,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     multilineBaseIndent: null,
     multilineMinimumIndent: null,
   }
+
+  let listState: ListState | null = null
+  let currentComponentId = 0 // Unique ID for each component level
 
   // Process each line
   for (let i = 0; i < lines.length; i++) {
@@ -169,6 +184,8 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       componentIndentStack.push(currentIndent)
       // Increase indent for component content
       currentIndent += tabSize
+      currentComponentId++ // New component level
+      listState = null // Reset list state for new component
       continue
     }
 
@@ -177,6 +194,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       // Restore previous indent level
       currentIndent = componentIndentStack.pop() || 0
       formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
+      listState = null // Reset list state when leaving component
       continue
     }
 
@@ -238,21 +256,37 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
     // Handle markdown lists
     if (UNORDERED_LIST_REGEX.test(trimmedContent) || ORDERED_LIST_REGEX.test(trimmedContent) || TASK_LIST_REGEX.test(trimmedContent)) {
-      // If this is the first list item or a root-level list item
-      if (lastListIndent === null || indent <= lastListIndent) {
-        lastListIndent = indent
+      // Reset list state if we're in a different component context
+      if (!listState || listState.componentId !== currentComponentId) {
+        listState = {
+          componentLevel: parentIndent,
+          baseIndent: indent,
+          nestingLevels: [indent],
+          componentId: currentComponentId,
+        }
+      }
+      else if (indent <= listState.baseIndent) {
+        // Reset nesting levels for new root-level item in same component
+        listState.baseIndent = indent
+        listState.nestingLevels = [indent]
+      }
+      else if (!listState.nestingLevels.includes(indent)) {
+        listState.nestingLevels.push(indent)
+        listState.nestingLevels.sort((a, b) => a - b)
       }
 
-      // Calculate relative indentation from the base list level
-      const relativeIndent = indent - lastListIndent
-      // Add relative indent to the parent component's indent level
-      const finalIndent = parentIndent + relativeIndent
+      const nestLevel = listState.nestingLevels.indexOf(indent)
+      const finalIndent = listState.componentLevel + (nestLevel * tabSize)
 
       formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
       continue
     }
+    else if (!trimmedContent && listState) {
+      formattedLines[formattedIndex++] = ''
+      continue
+    }
     else {
-      lastListIndent = null
+      listState = null
     }
 
     formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
