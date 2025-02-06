@@ -158,6 +158,10 @@ const editor = monaco.editor.create(el, {
 })
 ```
 
+## VS Code Extension
+
+The exported `formatter` and `getDocumentFoldingRanges` functions are also utilized in [@nuxtlabs/vscode-mdc](https://github.com/nuxtlabs/vscode-mdc) to provide the functionality to the [MDC VS Code extension](https://marketplace.visualstudio.com/items?itemName=Nuxt.mdc).
+
 ## 💻 Development
 
 - Clone repository

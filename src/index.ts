@@ -254,3 +254,4 @@ export const language = <languages.IMonarchLanguage>{
 
 export { formatter } from './formatter'
 export { foldingProvider } from './folding-provider'
+export { getDocumentFoldingRanges } from './get-document-folding-ranges'

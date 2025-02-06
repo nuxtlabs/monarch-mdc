@@ -1,4 +1,12 @@
 /**
+ * !Important: The exported `formatter` function in this file should remain unbound to monarch as it
+ * cane be used standalone to format MDC content strings. The function is also utilized in
+ * the `@nuxtlabs/vscode-mdc` VSCode extension https://github.com/nuxtlabs/vscode-mdc.
+ *
+ * Any changes to the function signature or behavior should be tested and verified in the extension.
+ */
+
+/**
  * Formatter Options
  */
 interface FormatterOptions {
@@ -21,6 +29,20 @@ interface YamlState {
   multilineMinimumIndent: number | null
 }
 
+/**
+ * Represents the state of a markdown list in the document.
+ */
+interface ListState {
+  // Parent component's indent level
+  componentLevel: number
+  // Original indent of first list item
+  baseIndent: number
+  // Track indent levels for hierarchy
+  nestingLevels: number[]
+  // Track which component owns this list
+  componentId: number
+}
+
 // Regular expressions for detecting different MDC elements
 const INDENT_REGEX = /^\s*/
 // Matches block component opening tags like "::name"
@@ -31,6 +53,12 @@ const COMPONENT_END_REGEX = /^\s*:{2,}\s*$/
 const MULTILINE_STRING_REGEX = /^[\w-]+:\s*[|>]/
 // Matches markdown code block opening tags like "```" or "~~~"
 const CODE_BLOCK_REGEX = /^\s*(?:`{3,}|~{3,})/
+// Matches unordered list items like "- item" or "* item"
+const UNORDERED_LIST_REGEX = /^\s*[-*]\s+/
+// Matches ordered list items like "1. item"
+const ORDERED_LIST_REGEX = /^\s*\d+\.\s+/
+// Matches task list items like "- [ ] item" or "* [x] item"
+const TASK_LIST_REGEX = /^\s*[-*]\s+\[.\]\s+/
 
 /**
  * Cache for commonly used indentation strings to avoid repeated string creation
@@ -83,6 +111,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     multilineBaseIndent: null,
     multilineMinimumIndent: null,
   }
+
+  let listState: ListState | null = null
+  let currentComponentId = 0 // Unique ID for each component level
 
   // Process each line
   for (let i = 0; i < lines.length; i++) {
@@ -153,6 +184,8 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       componentIndentStack.push(currentIndent)
       // Increase indent for component content
       currentIndent += tabSize
+      currentComponentId++ // New component level
+      listState = null // Reset list state for new component
       continue
     }
 
@@ -161,6 +194,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       // Restore previous indent level
       currentIndent = componentIndentStack.pop() || 0
       formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
+      listState = null // Reset list state when leaving component
       continue
     }
 
@@ -198,7 +232,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
         // Adjust indentation for YAML block content based on the base indent level
         if (yamlState.baseIndent !== null) {
           const relativeIndent = indent - yamlState.baseIndent
-          formattedLines[formattedIndex++] = getIndent(parentIndent + relativeIndent) + trimmedContent
+          formattedLines[formattedIndex++] = getIndent(Math.max(yamlState.baseIndent, parentIndent + relativeIndent)) + trimmedContent
           continue
         }
       }
@@ -220,9 +254,49 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       }
     }
 
+    // Handle markdown lists
+    if (UNORDERED_LIST_REGEX.test(trimmedContent) || ORDERED_LIST_REGEX.test(trimmedContent) || TASK_LIST_REGEX.test(trimmedContent)) {
+      // Reset list state if we're in a different component context
+      if (!listState || listState.componentId !== currentComponentId) {
+        listState = {
+          componentLevel: parentIndent,
+          baseIndent: indent,
+          nestingLevels: [indent],
+          componentId: currentComponentId,
+        }
+      }
+      else if (indent <= listState.baseIndent) {
+        // Reset nesting levels for new root-level item in same component
+        listState.baseIndent = indent
+        listState.nestingLevels = [indent]
+      }
+      else if (!listState.nestingLevels.includes(indent)) {
+        listState.nestingLevels.push(indent)
+        listState.nestingLevels.sort((a, b) => a - b)
+      }
+
+      const nestLevel = listState.nestingLevels.indexOf(indent)
+      const finalIndent = listState.componentLevel + (nestLevel * tabSize)
+
+      formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+      continue
+    }
+    else if (!trimmedContent && listState) {
+      formattedLines[formattedIndex++] = ''
+      continue
+    }
+    else {
+      listState = null
+    }
+
     formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
   }
 
   formattedLines.length = formattedIndex
+
+  // Files should end with a single newline character
+  if (formattedLines[formattedLines.length - 1] !== '') {
+    formattedLines.push('')
+  }
   return formattedLines.join('\n')
 }
