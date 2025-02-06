@@ -293,5 +293,10 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   }
 
   formattedLines.length = formattedIndex
+
+  // Files should end with a single newline character
+  if (formattedLines[formattedLines.length - 1] !== '') {
+    formattedLines.push('')
+  }
   return formattedLines.join('\n')
 }
