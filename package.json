@@ -21,6 +21,8 @@
     "@nuxt/eslint-config": "^0.7.5",
     "@vitest/ui": "^2.1.8",
     "eslint": "^9.17.0",
+    "execa": "^9.5.2",
+    "mdclint": "^0.0.2",
     "monaco-editor-core": "^0.52.2",
     "release-it": "^18.1.1",
     "unbuild": "^3.2.0",

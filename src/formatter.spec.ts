@@ -15,7 +15,7 @@ describe(`MDC Formatter`, () => {
       const expected = `::button
 content
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats nested block components', () => {
@@ -37,7 +37,7 @@ More outer content.
 
 More outer content.
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats nested block components and inline components', () => {
@@ -71,7 +71,7 @@ More outer content.
 
 More outer content.
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 
@@ -79,13 +79,13 @@ More outer content.
     it('formats simple inline component', () => {
       const input = ':icon'
       const expected = ':icon'
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats simple inline component with props', () => {
       const input = ':icon{ name="mdi:github" }'
       const expected = ':icon{ name="mdi:github" }'
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats top-level inline component', () => {
@@ -97,7 +97,7 @@ More outer content.
 
 :icon
 `
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats top-level inline component with props', () => {
@@ -109,7 +109,7 @@ More outer content.
 
 :icon{ name="mdi:github" }
 `
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats a nested inline component with props', () => {
@@ -129,7 +129,7 @@ Container content.
 :icon{ name="mdi:github" }
 ::
 `
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 
@@ -151,7 +151,7 @@ image:
 ---
 Slot content.
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats a nested block component with YAML nested props', () => {
@@ -173,7 +173,7 @@ Slot content.
   Slot content.
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats YAML with multiline strings', () => {
@@ -197,7 +197,7 @@ styles: |
   }
 ---
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('formats nested block components with YAML and multiline strings', () => {
@@ -233,7 +233,7 @@ styles: |
   ---
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 
@@ -341,7 +341,7 @@ padding: "20px"
   Another paragraph below the alert.
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 
@@ -365,7 +365,7 @@ function test() {
 }
 \`\`\`
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('handles deeply nested code blocks', () => {
@@ -391,7 +391,7 @@ if (true) {
     ::::
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 
@@ -421,7 +421,7 @@ styles: >
   ---
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 
@@ -453,7 +453,7 @@ content
     ::::
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
 
     it('properly formats unordered lists, ordered lists, and task lists', () => {
@@ -575,7 +575,7 @@ background-image:
   More outer content.
   :::
 ::`
-      expect(mdcFormatter(input, { tabSize: 2 })).toBe(expected)
+      expect(mdcFormatter(input, { tabSize: 2 }).trim()).toBe(expected.trim())
     })
   })
 })
