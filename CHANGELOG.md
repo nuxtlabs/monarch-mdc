@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.5.0
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/0.4.0...v0.5.0)
+
+### 🩹 Fixes
+
+- Formatting YAML properties and exporting a cjs build ([#12](https://github.com/nuxtlabs/monarch/pull/12))
+
+### ❤️ Contributors
+
+- Adam DeHaven ([@adamdehaven](http://github.com/adamdehaven))
+
 ## v0.4.0
 
 [compare changes](https://github.com/nuxtlabs/monarch/compare/0.3.0...v0.4.0)
