@@ -286,8 +286,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
         // For nested properties or lists, adjust indentation based on the base indent level
         if (yamlState.baseIndent !== null) {
-          // Always make sure we're using at least parentIndent as the base
-          const effectiveBaseIndent = Math.max(yamlState.baseIndent, parentIndent)
           const relativeIndent = indent - yamlState.baseIndent
           // Use yamlIntendedIndent as the base instead of yamlState.baseIndent
           formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + Math.max(0, relativeIndent)) + trimmedContent
