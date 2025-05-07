@@ -59,6 +59,8 @@ const UNORDERED_LIST_REGEX = /^\s*[-*]\s+/
 const ORDERED_LIST_REGEX = /^\s*\d+\.\s+/
 // Matches task list items like "- [ ] item" or "* [x] item"
 const TASK_LIST_REGEX = /^\s*[-*]\s+\[.\]\s+/
+// Matches parent properties (property ending with ":" without a value)
+const PARENT_PROPERTY_REGEX = /^[\w-]+:\s*$/
 
 /**
  * Cache for commonly used indentation strings to avoid repeated string creation
@@ -106,6 +108,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   let codeBlockBaseIndent: number | null = null
   let codeBlockOriginalIndent: number | null = null
 
+  // Track parent property state
+  let lastParentProperty = false
+
   const yamlState: YamlState = {
     baseIndent: null,
     multilineBaseIndent: null,
@@ -114,6 +119,10 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
   let listState: ListState | null = null
   let currentComponentId = 0 // Unique ID for each component level
+
+  // Add state variable to track the YAML front matter's intended indentation
+  // This will be the indentation we want for YAML blocks regardless of what's in the input
+  let yamlIntendedIndent: number | null = null
 
   // Process each line
   for (let i = 0; i < lines.length; i++) {
@@ -172,7 +181,18 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       insideMultilineString = false
       yamlState.multilineBaseIndent = null
       yamlState.multilineMinimumIndent = null
+
       yamlState.baseIndent = insideYamlBlock ? indent : null
+
+      // But also track the intended indentation as the parent component's indent
+      if (insideYamlBlock) {
+        yamlIntendedIndent = parentIndent
+      }
+      else {
+        yamlIntendedIndent = null
+      }
+
+      lastParentProperty = false // Reset parent property tracking
       formattedLines[formattedIndex++] = getIndent(parentIndent) + '---'
       continue
     }
@@ -202,7 +222,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     if (insideYamlBlock) {
       if (trimmedContent) {
         // Check if we're exiting a multiline string
-        if (insideMultilineString && indent === yamlState.baseIndent && trimmedContent.includes(':')) {
+        if (insideMultilineString && indent <= yamlState.baseIndent! && trimmedContent.includes(':')) {
           insideMultilineString = false
           yamlState.multilineBaseIndent = null
           yamlState.multilineMinimumIndent = null
@@ -216,6 +236,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           // Ensure minimum tabSize space indent
           yamlState.multilineMinimumIndent = parentIndent + tabSize
           formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
+          lastParentProperty = false // Reset parent property tracking
           continue
         }
 
@@ -229,14 +250,50 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           continue
         }
 
-        // Adjust indentation for YAML block content based on the base indent level
+        // If not in a multiline string, check for parent properties and children
+        if (!insideMultilineString) {
+          // Check if this is a parent property (property with no value after the colon)
+          if (PARENT_PROPERTY_REGEX.test(trimmedContent)) {
+            // Use yamlIntendedIndent (parentIndent) instead of yamlState.baseIndent
+            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent!) + trimmedContent
+            lastParentProperty = true
+            continue
+          }
+
+          // Check if this is a child property (after a parent property)
+          if (lastParentProperty && trimmedContent.includes(':')) {
+            // Use yamlIntendedIndent + tabSize for child properties
+            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + tabSize) + trimmedContent
+            lastParentProperty = PARENT_PROPERTY_REGEX.test(trimmedContent) // Check if this is also a parent
+            continue
+          }
+
+          // If this is content after a parent property but not a property itself
+          if (lastParentProperty) {
+            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + tabSize) + trimmedContent
+            continue
+          }
+
+          // For normal YAML properties, use the base indentation
+          if (trimmedContent.includes(':') && !trimmedContent.startsWith('-')) {
+            // Use yamlIntendedIndent instead of yamlState.baseIndent
+            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent!) + trimmedContent
+            // Reset parent property tracking for normal properties
+            lastParentProperty = false
+            continue
+          }
+        }
+
+        // For nested properties or lists, adjust indentation based on the base indent level
         if (yamlState.baseIndent !== null) {
           const relativeIndent = indent - yamlState.baseIndent
-          formattedLines[formattedIndex++] = getIndent(Math.max(yamlState.baseIndent, parentIndent + relativeIndent)) + trimmedContent
+          // Use yamlIntendedIndent as the base instead of yamlState.baseIndent
+          formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + Math.max(0, relativeIndent)) + trimmedContent
           continue
         }
       }
       else {
+        // Empty line - don't reset lastParentProperty to allow for multi-line content blocks
         // Indent empty lines at the same level as the previous line
         if (isFormatOnType) {
           // If inside a multiline string, ensure minimum indentation
@@ -279,6 +336,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       const finalIndent = listState.componentLevel + (nestLevel * tabSize)
 
       formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+      lastParentProperty = false // Reset parent property tracking
       continue
     }
     else if (!trimmedContent && listState) {
@@ -290,6 +348,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     }
 
     formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
+    lastParentProperty = false // Reset parent property tracking
   }
 
   formattedLines.length = formattedIndex
