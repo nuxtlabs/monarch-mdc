@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.6.0
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/0.5.0...v0.6.0)
+
+### 🩹 Fixes
+
+- **formatter:** Properly indent nested yaml props ([#13](https://github.com/nuxtlabs/monarch/pull/13))
+
+### 🏡 Chore
+
+- Upgrade deps ([c962dae](https://github.com/nuxtlabs/monarch/commit/c962dae))
+- Use `@release-it/conventional-changelog` ([863c3c0](https://github.com/nuxtlabs/monarch/commit/863c3c0))
+
+### ❤️ Contributors
+
+- Farnabaz <farnabaz@gmail.com>
+- Adam DeHaven ([@adamdehaven](https://github.com/adamdehaven))
 
 ## v0.5.0
 
@@ -68,4 +85,3 @@
 ### ❤️ Contributors
 
 - Farnabaz <farnabaz@gmail.com>
-

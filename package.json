@@ -1,6 +1,6 @@
 {
   "name": "@nuxtlabs/monarch-mdc",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "license": "MIT",
   "description": "Integrate MDC syntax with Monaco Editor",
   "main": "./dist/index.cjs",
