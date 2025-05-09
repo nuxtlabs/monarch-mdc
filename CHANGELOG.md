@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.1](https://github.com/nuxtlabs/monarch/compare/v0.6.0...v0.6.1) (2025-05-09)
+
+## v0.6.1
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/v0.6.0...v0.6.1)
+
+### 🏡 Chore
+
+- **build:** Ensure we build before release ([#14](https://github.com/nuxtlabs/monarch/pull/14))
+
+### ❤️ Contributors
+
+- Adam DeHaven ([@adamdehaven](https://github.com/adamdehaven))
+
 ## v0.6.0
 
 [compare changes](https://github.com/nuxtlabs/monarch/compare/0.5.0...v0.6.0)
