@@ -85,310 +85,348 @@ function getIndent(spaces: number): string {
  * @param {boolean} options.isFormatOnType - Whether the formatter is being used for on-type formatting. Defaults to `false`.
  */
 export const formatter = (content: string, { tabSize = 2, isFormatOnType = false }: FormatterOptions): string => {
-  // Split input into lines and pre-allocate output array
-  const lines = content.split('\n')
-  const formattedLines = Array.from({ length: lines.length })
-  // Tracks nested component indentation levels
-  const componentIndentStack: number[] = []
+  // Apply single formatter pass
+  const singleFormatPass = (input: string): string => {
+    // Split input into lines and pre-allocate output array
+    const lines = input.split('\n')
+    const formattedLines = Array.from({ length: lines.length })
+    // Tracks nested component indentation levels
+    const componentIndentStack: number[] = []
 
-  // State tracking variables
+    // State tracking variables
 
-  // Current indentation level
-  let currentIndent = 0
-  // Whether we're inside YAML frontmatter
-  let insideYamlBlock = false
-  // Whether we're inside a YAML multiline string
-  let insideMultilineString = false
-  // Whether we're inside a markdown code block
-  let insideCodeBlock = false
-  // Current position in output array
-  let formattedIndex = 0
+    // Current indentation level
+    let currentIndent = 0
+    // Whether we're inside YAML frontmatter
+    let insideYamlBlock = false
+    // Whether we're inside a YAML multiline string
+    let insideMultilineString = false
+    // Whether we're inside a markdown code block
+    let insideCodeBlock = false
+    // Current position in output array
+    let formattedIndex = 0
 
-  // Add new state variable at top of function
-  let codeBlockBaseIndent: number | null = null
-  let codeBlockOriginalIndent: number | null = null
+    // Add new state variable at top of function
+    let codeBlockBaseIndent: number | null = null
+    let codeBlockOriginalIndent: number | null = null
 
-  const yamlState: YamlState = {
-    baseIndent: null,
-    multilineBaseIndent: null,
-    multilineMinimumIndent: null,
-  }
-
-  let listState: ListState | null = null
-  let currentComponentId = 0 // Unique ID for each component level
-
-  // Add state variable to track the YAML front matter's intended indentation
-  // This will be the indentation we want for YAML blocks regardless of what's in the input
-  let yamlIntendedIndent: number | null = null
-
-  // Track the indentation hierarchy of parent properties
-  interface PropertyContext {
-    name: string // Name of the property
-    indent: number // Indentation level of this property
-    isParent: boolean // Whether this is a parent property
-    parentDepth: number // How deep we are in the nesting hierarchy (0 = root level)
-  }
-
-  // Stack of parent property contexts
-  const propertyStack: PropertyContext[] = []
-
-  // Keep track of nesting depth for proper indentation
-  let currentPropertyDepth = 0
-
-  // Process each line
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    // Leading whitespace count
-    const indent = line.match(INDENT_REGEX)?.[0].length || 0
-    const trimmedContent = line.trim()
-    // Current component's indent level
-    const parentIndent = componentIndentStack[componentIndentStack.length - 1] || 0
-
-    /**
-     * Return empty lines without indentation if not formatting on-type.
-     * We check that `isFormatOnType === false` since this would remove indentation
-     * for the current line the user is editing.
-     */
-    if (trimmedContent === '' && !isFormatOnType) {
-      formattedLines[formattedIndex++] = ''
-      continue
+    const yamlState: YamlState = {
+      baseIndent: null,
+      multilineBaseIndent: null,
+      multilineMinimumIndent: null,
     }
 
-    // Handle code block markers (``` or ~~~)
-    if (CODE_BLOCK_REGEX.test(trimmedContent)) {
-      insideCodeBlock = !insideCodeBlock
-      if (insideCodeBlock) {
-        codeBlockBaseIndent = parentIndent
-        // Store first line's original indent as reference
-        codeBlockOriginalIndent = indent
-        formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
-      }
-      else {
-        formattedLines[formattedIndex++] = getIndent(codeBlockBaseIndent!) + trimmedContent
-        codeBlockBaseIndent = null
-        codeBlockOriginalIndent = null
-      }
-      continue
+    let listState: ListState | null = null
+    let currentComponentId = 0 // Unique ID for each component level
+
+    // Add state variable to track the YAML front matter's intended indentation
+    // This will be the indentation we want for YAML blocks regardless of what's in the input
+    let yamlIntendedIndent: number | null = null
+
+    // Track the indentation hierarchy of parent properties
+    interface PropertyContext {
+      name: string // Name of the property
+      indent: number // Indentation level of this property
+      isParent: boolean // Whether this is a parent property
+      parentDepth: number // How deep we are in the nesting hierarchy (0 = root level)
     }
 
-    // Handle code block content
-    if (insideCodeBlock && codeBlockBaseIndent !== null) {
+    // Stack of parent property contexts
+    const propertyStack: PropertyContext[] = []
+
+    // Keep track of nesting depth for proper indentation
+    let currentPropertyDepth = 0
+
+    // Keep track of the last property we processed
+    let lastPropertyLine = -1
+    let lastPropertyIndent = -1
+    let lastPropertyWasParent = false
+
+    // Process each line
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      // Leading whitespace count
+      const indent = line.match(INDENT_REGEX)?.[0].length || 0
+      const trimmedContent = line.trim()
+      // Current component's indent level
+      const parentIndent = componentIndentStack[componentIndentStack.length - 1] || 0
+
+      /**
+       * Return empty lines without indentation if not formatting on-type.
+       * We check that `isFormatOnType === false` since this would remove indentation
+       * for the current line the user is editing.
+       */
       if (trimmedContent === '' && !isFormatOnType) {
         formattedLines[formattedIndex++] = ''
         continue
       }
 
-      // Calculate relative indentation from original position
-      const originalOffset = indent - (codeBlockOriginalIndent || 0)
-      // Add this offset to the required base indentation
-      const finalIndent = codeBlockBaseIndent + originalOffset
-      formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
-      continue
-    }
-
-    // Handle YAML frontmatter markers
-    if (trimmedContent === '---') {
-      insideYamlBlock = !insideYamlBlock
-      insideMultilineString = false
-      yamlState.multilineBaseIndent = null
-      yamlState.multilineMinimumIndent = null
-
-      yamlState.baseIndent = insideYamlBlock ? indent : null
-
-      // Reset property tracking when entering/exiting YAML blocks
-      if (!insideYamlBlock) {
-        propertyStack.length = 0
-      }
-
-      // But also track the intended indentation as the parent component's indent
-      if (insideYamlBlock) {
-        yamlIntendedIndent = parentIndent
-      }
-      else {
-        yamlIntendedIndent = null
-      }
-
-      formattedLines[formattedIndex++] = getIndent(parentIndent) + '---'
-      continue
-    }
-
-    // Handle component opening tags (::component-name)
-    if (COMPONENT_START_REGEX.test(line)) {
-      formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
-      // Save current indent level for nested components
-      componentIndentStack.push(currentIndent)
-      // Increase indent for component content
-      currentIndent += tabSize
-      currentComponentId++ // New component level
-      listState = null // Reset list state for new component
-      continue
-    }
-
-    // Handle component closing tags (::)
-    if (COMPONENT_END_REGEX.test(line)) {
-      // Restore previous indent level
-      currentIndent = componentIndentStack.pop() || 0
-      formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
-      listState = null // Reset list state when leaving component
-      continue
-    }
-
-    // Process YAML block content
-    if (insideYamlBlock) {
-      if (trimmedContent) {
-        // Check if we're exiting a multiline string
-        if (insideMultilineString && indent <= yamlState.baseIndent! && trimmedContent.includes(':')) {
-          insideMultilineString = false
-          yamlState.multilineBaseIndent = null
-          yamlState.multilineMinimumIndent = null
-        }
-
-        // Handle start of multiline string (using | or > indicators)
-        if (MULTILINE_STRING_REGEX.test(trimmedContent)) {
-          insideMultilineString = true
-          // Store original indent level
-          yamlState.multilineBaseIndent = indent
-          // Ensure minimum tabSize space indent
-          yamlState.multilineMinimumIndent = parentIndent + tabSize
+      // Handle code block markers (``` or ~~~)
+      if (CODE_BLOCK_REGEX.test(trimmedContent)) {
+        insideCodeBlock = !insideCodeBlock
+        if (insideCodeBlock) {
+          codeBlockBaseIndent = parentIndent
+          // Store first line's original indent as reference
+          codeBlockOriginalIndent = indent
           formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
+        }
+        else {
+          formattedLines[formattedIndex++] = getIndent(codeBlockBaseIndent!) + trimmedContent
+          codeBlockBaseIndent = null
+          codeBlockOriginalIndent = null
+        }
+        continue
+      }
+
+      // Handle code block content
+      if (insideCodeBlock && codeBlockBaseIndent !== null) {
+        if (trimmedContent === '' && !isFormatOnType) {
+          formattedLines[formattedIndex++] = ''
           continue
         }
 
-        // Handle content within multiline strings
-        if (insideMultilineString && yamlState.multilineBaseIndent !== null) {
-          // Calculate relative indentation from original multiline base
-          const relativeIndent = indent - yamlState.multilineBaseIndent
-          // Ensure minimum indent while preserving relative structure
-          const finalIndent = Math.max(yamlState.multilineMinimumIndent!, parentIndent + relativeIndent)
-          formattedLines[formattedIndex++] = getIndent(finalIndent) + line.slice(indent)
-          continue
+        // Calculate relative indentation from original position
+        const originalOffset = indent - (codeBlockOriginalIndent || 0)
+        // Add this offset to the required base indentation
+        const finalIndent = codeBlockBaseIndent + originalOffset
+        formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+        continue
+      }
+
+      // Handle YAML frontmatter markers
+      if (trimmedContent === '---') {
+        insideYamlBlock = !insideYamlBlock
+        insideMultilineString = false
+        yamlState.multilineBaseIndent = null
+        yamlState.multilineMinimumIndent = null
+
+        yamlState.baseIndent = insideYamlBlock ? indent : null
+
+        // Reset property tracking when entering/exiting YAML blocks
+        if (!insideYamlBlock) {
+          propertyStack.length = 0
         }
 
-        // Handle property lines
-        if (!insideMultilineString && trimmedContent.includes(':')) {
-          const currentIndent = indent
+        // But also track the intended indentation as the parent component's indent
+        if (insideYamlBlock) {
+          yamlIntendedIndent = parentIndent
+        }
+        else {
+          yamlIntendedIndent = null
+        }
 
-          // Extract property name and check if it's a parent property
-          const colonIndex = trimmedContent.indexOf(':')
-          const propertyName = trimmedContent.substring(0, colonIndex).trim()
-          const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
+        // Reset property tracking
+        lastPropertyLine = -1
+        lastPropertyIndent = -1
+        lastPropertyWasParent = false
 
-          // Determine the nesting level by removing properties from the stack that are at the same or deeper indentation
-          while (propertyStack.length > 0) {
-            const lastProp = propertyStack[propertyStack.length - 1]
+        formattedLines[formattedIndex++] = getIndent(parentIndent) + '---'
+        continue
+      }
 
-            // If we find a property at the same indent level, we are siblings
-            if (lastProp.indent === currentIndent) {
-              propertyStack.pop()
-              break
+      // Handle component opening tags (::component-name)
+      if (COMPONENT_START_REGEX.test(line)) {
+        formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
+        // Save current indent level for nested components
+        componentIndentStack.push(currentIndent)
+        // Increase indent for component content
+        currentIndent += tabSize
+        currentComponentId++ // New component level
+        listState = null // Reset list state for new component
+        continue
+      }
+
+      // Handle component closing tags (::)
+      if (COMPONENT_END_REGEX.test(line)) {
+        // Restore previous indent level
+        currentIndent = componentIndentStack.pop() || 0
+        formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
+        listState = null // Reset list state when leaving component
+        continue
+      }
+
+      // Process YAML block content
+      if (insideYamlBlock) {
+        if (trimmedContent) {
+          // Check if we're exiting a multiline string
+          if (insideMultilineString && indent <= yamlState.baseIndent! && trimmedContent.includes(':')) {
+            insideMultilineString = false
+            yamlState.multilineBaseIndent = null
+            yamlState.multilineMinimumIndent = null
+          }
+
+          // Handle start of multiline string (using | or > indicators)
+          if (MULTILINE_STRING_REGEX.test(trimmedContent)) {
+            insideMultilineString = true
+            // Store original indent level
+            yamlState.multilineBaseIndent = indent
+            // Ensure minimum tabSize space indent
+            yamlState.multilineMinimumIndent = parentIndent + tabSize
+            formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
+            continue
+          }
+
+          // Handle content within multiline strings
+          if (insideMultilineString && yamlState.multilineBaseIndent !== null) {
+            // Calculate relative indentation from original multiline base
+            const relativeIndent = indent - yamlState.multilineBaseIndent
+            // Ensure minimum indent while preserving relative structure
+            const finalIndent = Math.max(yamlState.multilineMinimumIndent!, parentIndent + relativeIndent)
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + line.slice(indent)
+            continue
+          }
+
+          // Handle property lines
+          if (!insideMultilineString && trimmedContent.includes(':')) {
+            const currentIndent = indent
+
+            // Extract property name and check if it's a parent property
+            const colonIndex = trimmedContent.indexOf(':')
+            const propertyName = trimmedContent.substring(0, colonIndex).trim()
+            const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
+
+            // Check if this property is a child of the previous parent property
+            const sameIndentAsPrevious = currentIndent === lastPropertyIndent
+            const isChildOfParent = sameIndentAsPrevious && lastPropertyWasParent && lastPropertyLine >= 0
+
+            // Create an effective indent that treats children of parent props as if they were
+            // actually indented one level deeper - this ensures correct stack handling in one pass
+            const effectiveIndent = isChildOfParent ? currentIndent + 1 : currentIndent
+
+            // Determine the nesting level by removing properties from the stack that are at the same or deeper indentation
+            while (propertyStack.length > 0) {
+              const lastProp = propertyStack[propertyStack.length - 1]
+
+              // Use effective indent for comparison to properly maintain parent-child relationships
+              if (lastProp.indent === effectiveIndent) {
+                propertyStack.pop()
+                break
+              }
+              else if (lastProp.indent > effectiveIndent) {
+                propertyStack.pop()
+              }
+              else {
+                break
+              }
             }
-            // If we find a property at a deeper indent level, we are moving back up
-            else if (lastProp.indent > currentIndent) {
-              propertyStack.pop()
+
+            // Calculate the right parent depth based on remaining stack
+            currentPropertyDepth = propertyStack.length
+
+            // Calculate indentation level
+            const finalIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
+
+            // Add this property to the stack if it's a parent, using its effective indent
+            if (isParentProp) {
+              propertyStack.push({
+                name: propertyName,
+                indent: effectiveIndent, // Store effective indent to maintain proper hierarchy
+                isParent: true,
+                parentDepth: currentPropertyDepth,
+              })
             }
-            // If we find a property at a shallower indent level, we are its child
+
+            // Update tracking for the next property
+            lastPropertyLine = i
+            lastPropertyIndent = currentIndent // Store actual indent, not effective indent
+            lastPropertyWasParent = isParentProp
+
+            // Output the property with proper indentation
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+            continue
+          }
+
+          // Handle non-property content
+          if (!insideMultilineString) {
+            // Calculate output indentation, base + tabSize for each nesting level + one more for content
+            const contentIndent = yamlIntendedIndent! + ((currentPropertyDepth + 1) * tabSize)
+            formattedLines[formattedIndex++] = getIndent(contentIndent) + trimmedContent
+            continue
+          }
+
+          // For other content, use intended indentation with relative offsets
+          if (yamlState.baseIndent !== null) {
+            const relativeIndent = indent - yamlState.baseIndent
+            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + Math.max(0, relativeIndent)) + trimmedContent
+            continue
+          }
+        }
+        else {
+          // Indent empty lines at the same level as the previous line
+          if (isFormatOnType) {
+            // If inside a multiline string, ensure minimum indentation
+            if (insideMultilineString) {
+              const finalIndent = Math.max((yamlState.multilineMinimumIndent || 0), indent)
+              formattedLines[formattedIndex++] = getIndent(finalIndent) + ''
+              continue
+            }
             else {
-              break
+              // Otherwise, use the current line's indentation
+              formattedLines[formattedIndex++] = getIndent(indent) + ''
+              continue
             }
           }
+        }
+      }
 
-          // Calculate the right parent depth based on remaining stack
-          currentPropertyDepth = propertyStack.length
-
-          // Calculate output indentation, base indent + tabSize for each nesting level
-          const outputIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
-
-          // Add this property to the stack if it's a parent
-          if (isParentProp) {
-            propertyStack.push({
-              name: propertyName,
-              indent: currentIndent,
-              isParent: true,
-              parentDepth: currentPropertyDepth,
-            })
+      // Handle markdown lists
+      if (UNORDERED_LIST_REGEX.test(trimmedContent) || ORDERED_LIST_REGEX.test(trimmedContent) || TASK_LIST_REGEX.test(trimmedContent)) {
+        // Reset list state if we're in a different component context
+        if (!listState || listState.componentId !== currentComponentId) {
+          listState = {
+            componentLevel: parentIndent,
+            baseIndent: indent,
+            nestingLevels: [indent],
+            componentId: currentComponentId,
           }
-
-          // Output the property with the calculated indentation
-          formattedLines[formattedIndex++] = getIndent(outputIndent) + trimmedContent
-          continue
+        }
+        else if (indent <= listState.baseIndent) {
+          // Reset nesting levels for new root-level item in same component
+          listState.baseIndent = indent
+          listState.nestingLevels = [indent]
+        }
+        else if (!listState.nestingLevels.includes(indent)) {
+          listState.nestingLevels.push(indent)
+          listState.nestingLevels.sort((a, b) => a - b)
         }
 
-        // Handle non-property content
-        if (!insideMultilineString) {
-          // Calculate output indentation, base + tabSize for each nesting level + one more for content
-          const contentIndent = yamlIntendedIndent! + ((currentPropertyDepth + 1) * tabSize)
-          formattedLines[formattedIndex++] = getIndent(contentIndent) + trimmedContent
-          continue
-        }
+        const nestLevel = listState.nestingLevels.indexOf(indent)
+        const finalIndent = listState.componentLevel + (nestLevel * tabSize)
 
-        // For other content, use intended indentation with relative offsets
-        if (yamlState.baseIndent !== null) {
-          const relativeIndent = indent - yamlState.baseIndent
-          formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + Math.max(0, relativeIndent)) + trimmedContent
-          continue
-        }
+        formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+        continue
+      }
+      else if (!trimmedContent && listState) {
+        formattedLines[formattedIndex++] = ''
+        continue
       }
       else {
-        // Indent empty lines at the same level as the previous line
-        if (isFormatOnType) {
-          // If inside a multiline string, ensure minimum indentation
-          if (insideMultilineString) {
-            const finalIndent = Math.max((yamlState.multilineMinimumIndent || 0), indent)
-            formattedLines[formattedIndex++] = getIndent(finalIndent) + ''
-            continue
-          }
-          else {
-            // Otherwise, use the current line's indentation
-            formattedLines[formattedIndex++] = getIndent(indent) + ''
-            continue
-          }
-        }
-      }
-    }
-
-    // Handle markdown lists
-    if (UNORDERED_LIST_REGEX.test(trimmedContent) || ORDERED_LIST_REGEX.test(trimmedContent) || TASK_LIST_REGEX.test(trimmedContent)) {
-      // Reset list state if we're in a different component context
-      if (!listState || listState.componentId !== currentComponentId) {
-        listState = {
-          componentLevel: parentIndent,
-          baseIndent: indent,
-          nestingLevels: [indent],
-          componentId: currentComponentId,
-        }
-      }
-      else if (indent <= listState.baseIndent) {
-        // Reset nesting levels for new root-level item in same component
-        listState.baseIndent = indent
-        listState.nestingLevels = [indent]
-      }
-      else if (!listState.nestingLevels.includes(indent)) {
-        listState.nestingLevels.push(indent)
-        listState.nestingLevels.sort((a, b) => a - b)
+        listState = null
       }
 
-      const nestLevel = listState.nestingLevels.indexOf(indent)
-      const finalIndent = listState.componentLevel + (nestLevel * tabSize)
-
-      formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
-      continue
-    }
-    else if (!trimmedContent && listState) {
-      formattedLines[formattedIndex++] = ''
-      continue
-    }
-    else {
-      listState = null
+      formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
     }
 
-    formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
+    formattedLines.length = formattedIndex
+
+    // Files should end with a single newline character
+    if (formattedLines[formattedLines.length - 1] !== '') {
+      formattedLines.push('')
+    }
+    return formattedLines.join('\n')
   }
 
-  formattedLines.length = formattedIndex
+  // Keep applying formatting passes until output stabilizes
+  let currentResult = content
+  let previousResult = ''
+  let passes = 0
+  const MAX_PASSES = 10 // Safety limit to prevent infinite loops
 
-  // Files should end with a single newline character
-  if (formattedLines[formattedLines.length - 1] !== '') {
-    formattedLines.push('')
+  while (currentResult !== previousResult && passes < MAX_PASSES) {
+    previousResult = currentResult
+    currentResult = singleFormatPass(currentResult)
+    passes++
   }
-  return formattedLines.join('\n')
+
+  return currentResult
 }
