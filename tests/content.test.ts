@@ -28,8 +28,6 @@ describe(`MDC Formatter`, async () => {
       await writeFile(join(__dirname, 'content/tmp', input), formatted)
       const error = await execa('npx', ['mdclint', join(__dirname, 'content/tmp', input)]).then(result => result.stdout).catch(error => error)
 
-      console.log('error', error)
-
       const realError = String(error).split('\n')
         .filter(line => line.trim().length > 0 && !line.includes('failed with exit code 1'))
         .filter(line => !line.includes('tests/content/tmp/') && !line.includes(' problems'))
