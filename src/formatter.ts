@@ -124,6 +124,17 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   // This will be the indentation we want for YAML blocks regardless of what's in the input
   let yamlIntendedIndent: number | null = null
 
+  // Replace the simple lastParentProperty flag with a more sophisticated tracking mechanism
+  // Track the indentation hierarchy of parent properties
+  interface PropertyContext {
+    name: string // Name of the property
+    indent: number // Indentation level of this property
+    isParent: boolean // Whether this is a parent property
+  }
+
+  // Stack of parent property contexts
+  const propertyStack: PropertyContext[] = []
+
   // Process each line
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
@@ -184,6 +195,11 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
       yamlState.baseIndent = insideYamlBlock ? indent : null
 
+      // Reset property tracking when entering/exiting YAML blocks
+      if (!insideYamlBlock) {
+        propertyStack.length = 0
+      }
+
       // But also track the intended indentation as the parent component's indent
       if (insideYamlBlock) {
         yamlIntendedIndent = parentIndent
@@ -192,7 +208,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
         yamlIntendedIndent = null
       }
 
-      lastParentProperty = false // Reset parent property tracking
       formattedLines[formattedIndex++] = getIndent(parentIndent) + '---'
       continue
     }
@@ -236,7 +251,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           // Ensure minimum tabSize space indent
           yamlState.multilineMinimumIndent = parentIndent + tabSize
           formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
-          lastParentProperty = false // Reset parent property tracking
           continue
         }
 
@@ -250,44 +264,60 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           continue
         }
 
-        // If not in a multiline string, check for parent properties and children
-        if (!insideMultilineString) {
-          // Check if this is a parent property (property with no value after the colon)
-          if (PARENT_PROPERTY_REGEX.test(trimmedContent)) {
-            // Use yamlIntendedIndent (parentIndent) instead of yamlState.baseIndent
-            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent!) + trimmedContent
-            lastParentProperty = true
-            continue
+        // Handle property lines
+        if (!insideMultilineString && trimmedContent.includes(':')) {
+          const currentIndent = indent
+
+          // Extract property name and check if it's a parent property
+          const colonIndex = trimmedContent.indexOf(':')
+          const propertyName = trimmedContent.substring(0, colonIndex).trim()
+          const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
+
+          // Remove properties from stack that are at the same or deeper indentation
+          while (propertyStack.length > 0
+            && propertyStack[propertyStack.length - 1].indent >= currentIndent) {
+            propertyStack.pop()
           }
 
-          // Check if this is a child property (after a parent property)
-          if (lastParentProperty && trimmedContent.includes(':')) {
-            // Use yamlIntendedIndent + tabSize for child properties
-            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + tabSize) + trimmedContent
-            lastParentProperty = PARENT_PROPERTY_REGEX.test(trimmedContent) // Check if this is also a parent
-            continue
+          // Calculate output indentation level
+          let outputIndent = yamlIntendedIndent!
+          if (propertyStack.length > 0) {
+            // If we have parent properties in the stack, this is a child property
+            // Add one tabSize of indentation
+            outputIndent += tabSize
           }
 
-          // If this is content after a parent property but not a property itself
-          if (lastParentProperty) {
-            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + tabSize) + trimmedContent
-            continue
+          // Push current property onto stack if it's a parent property
+          if (isParentProp) {
+            propertyStack.push({
+              name: propertyName,
+              indent: currentIndent,
+              isParent: true,
+            })
           }
 
-          // For normal YAML properties, use the base indentation
-          if (trimmedContent.includes(':') && !trimmedContent.startsWith('-')) {
-            // Use yamlIntendedIndent instead of yamlState.baseIndent
-            formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent!) + trimmedContent
-            // Reset parent property tracking for normal properties
-            lastParentProperty = false
-            continue
-          }
+          // Output the property with the calculated indentation
+          formattedLines[formattedIndex++] = getIndent(outputIndent) + trimmedContent
+          continue
         }
 
-        // For nested properties or lists, adjust indentation based on the base indent level
+        // Handle non-property content
+        if (!insideMultilineString) {
+          // Calculate output indentation
+          let outputIndent = yamlIntendedIndent!
+          if (propertyStack.length > 0) {
+            // If we have parent properties in the stack, this is child content
+            // Add one tabSize of indentation
+            outputIndent += tabSize
+          }
+
+          formattedLines[formattedIndex++] = getIndent(outputIndent) + trimmedContent
+          continue
+        }
+
+        // For other content, use intended indentation with relative offsets
         if (yamlState.baseIndent !== null) {
           const relativeIndent = indent - yamlState.baseIndent
-          // Use yamlIntendedIndent as the base instead of yamlState.baseIndent
           formattedLines[formattedIndex++] = getIndent(yamlIntendedIndent! + Math.max(0, relativeIndent)) + trimmedContent
           continue
         }
