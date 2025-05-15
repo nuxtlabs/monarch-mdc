@@ -274,8 +274,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
 
           // Remove properties from stack that are at the same or deeper indentation
-          while (propertyStack.length > 0
-            && propertyStack[propertyStack.length - 1].indent >= currentIndent) {
+          while (propertyStack.length > 0 && propertyStack[propertyStack.length - 1].indent >= currentIndent) {
             propertyStack.pop()
           }
 
