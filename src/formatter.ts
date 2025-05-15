@@ -126,10 +126,14 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     name: string // Name of the property
     indent: number // Indentation level of this property
     isParent: boolean // Whether this is a parent property
+    parentDepth: number // How deep we are in the nesting hierarchy (0 = root level)
   }
 
   // Stack of parent property contexts
   const propertyStack: PropertyContext[] = []
+
+  // Keep track of nesting depth for proper indentation
+  let currentPropertyDepth = 0
 
   // Process each line
   for (let i = 0; i < lines.length; i++) {
@@ -269,25 +273,38 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           const propertyName = trimmedContent.substring(0, colonIndex).trim()
           const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
 
-          // Remove properties from stack that are at the same or deeper indentation
-          while (propertyStack.length > 0 && propertyStack[propertyStack.length - 1].indent >= currentIndent) {
-            propertyStack.pop()
+          // Determine the nesting level by removing properties from the stack that are at the same or deeper indentation
+          while (propertyStack.length > 0) {
+            const lastProp = propertyStack[propertyStack.length - 1]
+
+            // If we find a property at the same indent level, we are siblings
+            if (lastProp.indent === currentIndent) {
+              propertyStack.pop()
+              break
+            }
+            // If we find a property at a deeper indent level, we are moving back up
+            else if (lastProp.indent > currentIndent) {
+              propertyStack.pop()
+            }
+            // If we find a property at a shallower indent level, we are its child
+            else {
+              break
+            }
           }
 
-          // Calculate output indentation level
-          let outputIndent = yamlIntendedIndent!
-          if (propertyStack.length > 0) {
-            // If we have parent properties in the stack, this is a child property
-            // Add one tabSize of indentation
-            outputIndent += tabSize
-          }
+          // Calculate the right parent depth based on remaining stack
+          currentPropertyDepth = propertyStack.length
 
-          // Push current property onto stack if it's a parent property
+          // Calculate output indentation, base indent + tabSize for each nesting level
+          const outputIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
+
+          // Add this property to the stack if it's a parent
           if (isParentProp) {
             propertyStack.push({
               name: propertyName,
               indent: currentIndent,
               isParent: true,
+              parentDepth: currentPropertyDepth,
             })
           }
 
@@ -298,15 +315,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
         // Handle non-property content
         if (!insideMultilineString) {
-          // Calculate output indentation
-          let outputIndent = yamlIntendedIndent!
-          if (propertyStack.length > 0) {
-            // If we have parent properties in the stack, this is child content
-            // Add one tabSize of indentation
-            outputIndent += tabSize
-          }
-
-          formattedLines[formattedIndex++] = getIndent(outputIndent) + trimmedContent
+          // Calculate output indentation, base + tabSize for each nesting level + one more for content
+          const contentIndent = yamlIntendedIndent! + ((currentPropertyDepth + 1) * tabSize)
+          formattedLines[formattedIndex++] = getIndent(contentIndent) + trimmedContent
           continue
         }
 
