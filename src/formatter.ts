@@ -108,9 +108,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   let codeBlockBaseIndent: number | null = null
   let codeBlockOriginalIndent: number | null = null
 
-  // Track parent property state
-  let lastParentProperty = false
-
   const yamlState: YamlState = {
     baseIndent: null,
     multilineBaseIndent: null,
@@ -124,7 +121,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
   // This will be the indentation we want for YAML blocks regardless of what's in the input
   let yamlIntendedIndent: number | null = null
 
-  // Replace the simple lastParentProperty flag with a more sophisticated tracking mechanism
   // Track the indentation hierarchy of parent properties
   interface PropertyContext {
     name: string // Name of the property
@@ -322,7 +318,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
         }
       }
       else {
-        // Empty line - don't reset lastParentProperty to allow for multi-line content blocks
         // Indent empty lines at the same level as the previous line
         if (isFormatOnType) {
           // If inside a multiline string, ensure minimum indentation
@@ -365,7 +360,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       const finalIndent = listState.componentLevel + (nestLevel * tabSize)
 
       formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
-      lastParentProperty = false // Reset parent property tracking
       continue
     }
     else if (!trimmedContent && listState) {
@@ -377,7 +371,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     }
 
     formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
-    lastParentProperty = false // Reset parent property tracking
   }
 
   formattedLines.length = formattedIndex
