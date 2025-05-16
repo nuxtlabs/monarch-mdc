@@ -142,6 +142,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     let lastPropertyIndent = -1
     let lastPropertyWasParent = false
 
+    // Add a variable to track property indentation level for multiline strings
+    let multilinePropertyIndent = 0
+
     // Process each line
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
@@ -249,55 +252,35 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       if (insideYamlBlock) {
         if (trimmedContent) {
           // Check if we're exiting a multiline string
-          if (insideMultilineString && indent <= yamlState.baseIndent! && trimmedContent.includes(':')) {
+          if (insideMultilineString && indent <= yamlState.multilineBaseIndent! && trimmedContent.includes(':')) {
             insideMultilineString = false
             yamlState.multilineBaseIndent = null
             yamlState.multilineMinimumIndent = null
+            // Continue processing this line as a normal property
           }
 
-          // Handle start of multiline string (using | or > indicators)
-          if (MULTILINE_STRING_REGEX.test(trimmedContent)) {
-            insideMultilineString = true
-            // Store original indent level
-            yamlState.multilineBaseIndent = indent
-            // Ensure minimum tabSize space indent
-            yamlState.multilineMinimumIndent = parentIndent + tabSize
-            formattedLines[formattedIndex++] = getIndent(parentIndent) + trimmedContent
-            continue
-          }
-
-          // Handle content within multiline strings
-          if (insideMultilineString && yamlState.multilineBaseIndent !== null) {
-            // Calculate relative indentation from original multiline base
-            const relativeIndent = indent - yamlState.multilineBaseIndent
-            // Ensure minimum indent while preserving relative structure
-            const finalIndent = Math.max(yamlState.multilineMinimumIndent!, parentIndent + relativeIndent)
-            formattedLines[formattedIndex++] = getIndent(finalIndent) + line.slice(indent)
-            continue
-          }
-
-          // Handle property lines
+          // Process property lines (including multiline string markers)
           if (!insideMultilineString && trimmedContent.includes(':')) {
             const currentIndent = indent
 
-            // Extract property name and check if it's a parent property
+            // Extract property name
             const colonIndex = trimmedContent.indexOf(':')
             const propertyName = trimmedContent.substring(0, colonIndex).trim()
-            const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
 
-            // Check if this property is a child of the previous parent property
+            // Determine if this is a parent property or multiline string start
+            const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
+            const isMultilineStart = MULTILINE_STRING_REGEX.test(trimmedContent)
+
+            // Check if it's a child of a parent property
             const sameIndentAsPrevious = currentIndent === lastPropertyIndent
             const isChildOfParent = sameIndentAsPrevious && lastPropertyWasParent && lastPropertyLine >= 0
 
-            // Create an effective indent that treats children of parent props as if they were
-            // actually indented one level deeper - this ensures correct stack handling in one pass
+            // Create an effective indent that treats children of parent props as if they were actually indented one level deeper
             const effectiveIndent = isChildOfParent ? currentIndent + 1 : currentIndent
 
-            // Determine the nesting level by removing properties from the stack that are at the same or deeper indentation
+            // Manage property stack, remove properties at same or deeper levels
             while (propertyStack.length > 0) {
               const lastProp = propertyStack[propertyStack.length - 1]
-
-              // Use effective indent for comparison to properly maintain parent-child relationships
               if (lastProp.indent === effectiveIndent) {
                 propertyStack.pop()
                 break
@@ -310,35 +293,55 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
               }
             }
 
-            // Calculate the right parent depth based on remaining stack
+            // Calculate property depth based on remaining stack
             currentPropertyDepth = propertyStack.length
 
             // Calculate indentation level
             const finalIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
 
-            // Add this property to the stack if it's a parent, using its effective indent
+            // Add this property to the stack if it's a parent property
             if (isParentProp) {
               propertyStack.push({
                 name: propertyName,
-                indent: effectiveIndent, // Store effective indent to maintain proper hierarchy
+                indent: effectiveIndent,
                 isParent: true,
                 parentDepth: currentPropertyDepth,
               })
             }
 
-            // Update tracking for the next property
+            // Store property context for the next line
             lastPropertyLine = i
-            lastPropertyIndent = currentIndent // Store actual indent, not effective indent
+            lastPropertyIndent = currentIndent
             lastPropertyWasParent = isParentProp
 
-            // Output the property with proper indentation
+            // Now handle multiline string start if needed
+            if (isMultilineStart) {
+              insideMultilineString = true
+              yamlState.multilineBaseIndent = indent
+              multilinePropertyIndent = finalIndent
+            }
+
+            // Output the property line with correct indentation
             formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+            continue
+          }
+
+          // Handle content within multiline strings
+          if (insideMultilineString && yamlState.multilineBaseIndent !== null) {
+            // Base indentation for content is one level deeper than the multiline property
+            const baseContentIndent = multilinePropertyIndent + tabSize
+
+            // Calculate relative indentation to preserve internal structure
+            const relativeIndent = indent - yamlState.multilineBaseIndent
+            const contentIndent = baseContentIndent + (relativeIndent > 0 ? relativeIndent - tabSize : 0)
+
+            formattedLines[formattedIndex++] = getIndent(contentIndent) + line.slice(indent)
             continue
           }
 
           // Handle non-property content
           if (!insideMultilineString) {
-            // Calculate output indentation, base + tabSize for each nesting level + one more for content
+            // Calculate the correct indent for non-property content
             const contentIndent = yamlIntendedIndent! + ((currentPropertyDepth + 1) * tabSize)
             formattedLines[formattedIndex++] = getIndent(contentIndent) + trimmedContent
             continue
