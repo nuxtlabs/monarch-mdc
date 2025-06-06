@@ -15,7 +15,8 @@
     "test": "vitest run --passWithNoTests",
     "test:ui": "vitest --ui --passWithNoTests",
     "build": "unbuild",
-    "release": "pnpm build && pnpm test && release-it"
+    "release": "pnpm build && pnpm test && release-it",
+    "verify": "pnpm build && pnpm lint && pnpm test"
   },
   "devDependencies": {
     "@nuxt/eslint-config": "^1.3.0",
