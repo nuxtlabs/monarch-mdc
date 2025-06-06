@@ -22,8 +22,12 @@ describe(`MDC Formatter`, async () => {
 
       const formatted = mdcFormatter(content, { tabSize: 2 })
 
+      // Expect the formatted `input` content to be the same as the expected `output` content
+      expect(formatted).toBe(expected)
+
       await writeFile(join(__dirname, 'content/tmp', input), formatted)
       const error = await execa('npx', ['mdclint', join(__dirname, 'content/tmp', input)]).then(result => result.stdout).catch(error => error)
+
       const realError = String(error).split('\n')
         .filter(line => line.trim().length > 0 && !line.includes('failed with exit code 1'))
         .filter(line => !line.includes('tests/content/tmp/') && !line.includes(' problems'))
@@ -32,11 +36,12 @@ describe(`MDC Formatter`, async () => {
         .filter(line => !line.includes('Code block style'))
         .filter(line => !line.includes('Lists should be surrounded by blank lines'))
 
+        // npm warnings, unrelated, e.g. 'npm warn config optional Use `--omit=optional` to exclude optional dependencies...'
+        .filter(line => !line.includes('npm warn config'))
+
         .join('\n')
 
       expect(realError).toBe('')
-
-      expect(formatted).toBe(expected)
     })
   }
 })
