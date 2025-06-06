@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.6.2](https://github.com/nuxtlabs/monarch/compare/v0.6.1...v0.6.2) (2025-06-06)
+
+### Bug Fixes
+
+* **formatting:** multiple nested properties ([#15](https://github.com/nuxtlabs/monarch/issues/15)) ([f0271d5](https://github.com/nuxtlabs/monarch/commit/f0271d59255ec5acf328858c0350b27738e37e3a))
+
+## v0.6.2
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/v0.6.1...v0.6.2)
+
+### 🩹 Fixes
+
+- **formatting:** Multiple nested properties ([#15](https://github.com/nuxtlabs/monarch/pull/15))
+
+### 🏡 Chore
+
+- Add verify script ([9b80a5a](https://github.com/nuxtlabs/monarch/commit/9b80a5a))
+- Upgrade deps ([085ceb7](https://github.com/nuxtlabs/monarch/commit/085ceb7))
+
+### ❤️ Contributors
+
+- Farnabaz <farnabaz@gmail.com>
+- Adam DeHaven ([@adamdehaven](https://github.com/adamdehaven))
+
 ## [0.6.1](https://github.com/nuxtlabs/monarch/compare/v0.6.0...v0.6.1) (2025-05-09)
 
 ## v0.6.1
