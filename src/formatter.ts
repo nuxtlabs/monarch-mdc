@@ -1,6 +1,6 @@
 /**
  * !Important: The exported `formatter` function in this file should remain unbound to monarch as it
- * cane be used standalone to format MDC content strings. The function is also utilized in
+ * can be used standalone to format MDC content strings. The function is also utilized in
  * the `@nuxtlabs/vscode-mdc` VSCode extension https://github.com/nuxtlabs/vscode-mdc.
  *
  * Any changes to the function signature or behavior should be tested and verified in the extension.
@@ -21,11 +21,11 @@ interface FormatterOptions {
  * special handling for multiline string content
  */
 interface YamlState {
-  // Base indentation level for YAML block
+  /* Base indentation level for YAML block */
   baseIndent: number | null
-  // Starting indent for multiline strings
+  /* Starting indent for multiline strings */
   multilineBaseIndent: number | null
-  // Minimum required indent for multiline content
+  /* Minimum required indent for multiline content */
   multilineMinimumIndent: number | null
 }
 
@@ -33,14 +33,40 @@ interface YamlState {
  * Represents the state of a markdown list in the document.
  */
 interface ListState {
-  // Parent component's indent level
+  /* Parent component's indent level */
   componentLevel: number
-  // Original indent of first list item
+  /* Original indent of first list item */
   baseIndent: number
-  // Track indent levels for hierarchy
+  /* Track indent levels for hierarchy */
   nestingLevels: number[]
-  // Track which component owns this list
+  /* Track which component owns this list */
   componentId: number
+}
+
+/**
+ * Track the indentation hierarchy of parent properties.
+ */
+interface PropertyContext {
+  /* Name of the property */
+  name: string
+  /* Indentation level of this property */
+  indent: number
+  /* Whether this is a parent property */
+  isParent: boolean
+  /* How deep we are in the nesting hierarchy (0 = root level) */
+  parentDepth: number
+}
+
+/**
+ * Add a structure to track array items at each level in the hierarchy.
+ */
+interface ArrayLevelInfo {
+  /* Indentation level */
+  level: number
+  /* Original indent */
+  indent: number
+  /* Formatted indent for items at this level */
+  itemIndent: number
 }
 
 // Regular expressions for detecting different MDC elements
@@ -61,6 +87,98 @@ const ORDERED_LIST_REGEX = /^\s*\d+\.\s+/
 const TASK_LIST_REGEX = /^\s*[-*]\s+\[.\]\s+/
 // Matches parent properties (property ending with ":" without a value)
 const PARENT_PROPERTY_REGEX = /^[\w-]+:\s*$/
+// Matches YAML array items (lines starting with "- ")
+const ARRAY_ITEM_REGEX = /^\s*-\s+/
+// Matches inline arrays (property ending with [] or [ ] or similar with whitespace between brackets)
+const INLINE_ARRAY_REGEX = /^[\w-]+:\s*\[\s*(?:\]\s*)?$/
+// Matches the start of flow arrays (property ending with [ and some content)
+const FLOW_ARRAY_START_REGEX = /^[\w-]+:\s*\[\s*\S+/
+
+/**
+ * Helper function to check if a line contains a property definition.
+ *
+ * @param {string} line - The trimmed line to check
+ * @returns {boolean} - True if the line defines a property
+ */
+function isPropertyLine(line: string): boolean {
+  // First, check if the line has a colon
+  if (!line.includes(':')) {
+    return false
+  }
+
+  // Handle quoted property names: "prop-name": value or 'prop-name': value
+  if (/^"[^"]+"\s*:|^'[^']+'\s*:/.test(line)) {
+    return true
+  }
+
+  // Handle standard property names: prop-name: value
+  // We need to ensure the colon is part of the property definition, not in a value
+  const match = line.match(/^([\w-]+)\s*:/)
+  if (match) {
+    // Check that the property name is valid (word chars and dashes)
+    const propName = match[1]
+    if (/^[\w-]+$/.test(propName)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Helper function to check if a line is a property with no value.
+ *
+ * @param {string} line - The line to check
+ * @returns {boolean} - True if the line defines a property with no value
+ */
+function isEmptyProperty(line: string): boolean {
+  return PARENT_PROPERTY_REGEX.test(line)
+}
+
+/**
+ * Helper function to extract a property name safely.
+ * This handles quoted property names and avoids issues with values containing colons.
+ *
+ * @param {string} line - The line containing a property
+ * @returns {string} - The property name, or empty string if not found
+ */
+function getPropertyName(line: string): string {
+  // Try to match quoted properties first
+  const quotedMatch = line.match(/^(?:"([^"]+)"|'([^']+)')\s*:/)
+  if (quotedMatch) {
+    return quotedMatch[1] || quotedMatch[2] || ''
+  }
+
+  // Then try standard properties
+  const standardMatch = line.match(/^([\w-]+)\s*:/)
+  if (standardMatch) {
+    return standardMatch[1]
+  }
+
+  return ''
+}
+
+/**
+ * Helper function to check if a line is an array property that might have array values.
+ *
+ * @param {string} line - The current line
+ * @param {string[]} lines - All lines in the document
+ * @param {number} i - Current line index
+ * @returns {boolean} - True if this is a property that might have array values
+ */
+function isArrayProperty(line: string, lines: string[], i: number): boolean {
+  // First check if this is a property without a value
+  if (!isEmptyProperty(line)) {
+    return false
+  }
+
+  // Then check if the next line is an array item
+  if (i + 1 < lines.length && ARRAY_ITEM_REGEX.test(lines[i + 1].trim())) {
+    return true
+  }
+
+  return false
+}
 
 /**
  * Cache for commonly used indentation strings to avoid repeated string creation
@@ -123,14 +241,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     // This will be the indentation we want for YAML blocks regardless of what's in the input
     let yamlIntendedIndent: number | null = null
 
-    // Track the indentation hierarchy of parent properties
-    interface PropertyContext {
-      name: string // Name of the property
-      indent: number // Indentation level of this property
-      isParent: boolean // Whether this is a parent property
-      parentDepth: number // How deep we are in the nesting hierarchy (0 = root level)
-    }
-
     // Stack of parent property contexts
     const propertyStack: PropertyContext[] = []
 
@@ -144,6 +254,33 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
     // Add a variable to track property indentation level for multiline strings
     let multilinePropertyIndent = 0
+
+    // Track whether we're inside an array
+    let insideArray = false
+    // Track array indentation levels
+    let arrayBaseIndent = 0
+    // Track array property indent level
+    let arrayPropertyIndent = 0
+    // Track whether the current line continues a flow-style array
+    let insideFlowArray = false
+    // Track if we're processing properties inside an array item
+    let insideArrayItem = false
+    // Track the indentation of the current array item start
+    let currentArrayItemIndent = 0
+    // Track the nesting depth of arrays
+    let arrayNestingLevel = 0
+    // Stack to keep track of parent array property indents
+    const arrayPropertyIndentStack: number[] = []
+    // Stack to track array item indentation at each nesting level
+    const arrayItemIndentStack: number[] = []
+
+    // Add a flag to track when we're specifically inside an array property that has array values
+    let insideArrayPropWithArrayValues = false
+    // Keep track of the indentation level of the array property that has array values
+    let arrayPropWithArrayValuesIndent = 0
+
+    // Stack to track array levels - each entry represents a "level" of array items
+    const arrayLevels: ArrayLevelInfo[] = []
 
     // Process each line
     for (let i = 0; i < lines.length; i++) {
@@ -252,24 +389,219 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       if (insideYamlBlock) {
         if (trimmedContent) {
           // Check if we're exiting a multiline string
-          if (insideMultilineString && indent <= yamlState.multilineBaseIndent! && trimmedContent.includes(':')) {
+          if (insideMultilineString && indent <= yamlState.multilineBaseIndent! && isPropertyLine(trimmedContent)) {
             insideMultilineString = false
             yamlState.multilineBaseIndent = null
             yamlState.multilineMinimumIndent = null
             // Continue processing this line as a normal property
           }
 
+          // Check if we're inside a flow-style array that continues to the next line
+          if (insideFlowArray) {
+            // Check if the flow array ends on this line (has a closing bracket)
+            if (trimmedContent.includes(']')) {
+              insideFlowArray = false
+            }
+
+            // Format the continuation of the flow array at the same level as the property
+            formattedLines[formattedIndex++] = getIndent(arrayPropertyIndent) + trimmedContent
+            continue
+          }
+
+          // Handle array items first (higher priority than property lines)
+          if (ARRAY_ITEM_REGEX.test(trimmedContent)) {
+            // Check if this array item is a direct child of an array-prop parent
+            const isDirectChildOfArrayProp = insideArrayPropWithArrayValues
+              && indent > arrayPropWithArrayValuesIndent
+
+            // Check if this is a sibling array item (same level as previous items)
+            let isSiblingArrayItem = false
+            let siblingLevel: ArrayLevelInfo | undefined
+
+            // Look through our tracked array levels to see if this matches an existing level
+            for (let j = 0; j < arrayLevels.length; j++) {
+              const level = arrayLevels[j]
+              // If indents match exactly, we're at the same level
+              if (indent === level.indent) {
+                isSiblingArrayItem = true
+                siblingLevel = level
+                break
+              }
+            }
+
+            // If this is the first array item, set up array state
+            if (!insideArray) {
+              insideArray = true
+              arrayBaseIndent = indent
+              // Array item indent is one level deeper than the property
+              arrayPropertyIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
+              arrayNestingLevel = 0
+              arrayPropertyIndentStack.length = 0
+              arrayItemIndentStack.length = 0
+
+              // Initialize array level tracking
+              arrayLevels.length = 0
+              // Add the root level
+              arrayLevels.push({
+                level: 0,
+                indent: indent,
+                itemIndent: arrayPropertyIndent + tabSize,
+              })
+            }
+            else {
+              // Handle sibling array items differently from nested items
+              if (isSiblingArrayItem && siblingLevel) {
+                // Use the stored indentation for this level
+                // This ensures siblings stay at the same level rather than nesting
+                arrayPropertyIndent = siblingLevel.itemIndent - tabSize
+                arrayNestingLevel = siblingLevel.level
+              }
+              else {
+                // Check if this is a new nesting level by comparing to current indent
+                if (arrayItemIndentStack.length > 0) {
+                  const lastArrayItemIndent = arrayItemIndentStack[arrayItemIndentStack.length - 1]
+
+                  // If indent is greater than last array item, it's a new nesting level
+                  if (indent > lastArrayItemIndent) {
+                    arrayNestingLevel++
+                    arrayPropertyIndentStack.push(arrayPropertyIndent)
+                    // The parent array item becomes the new property parent
+                    arrayPropertyIndent = currentArrayItemIndent
+
+                    // Track this new level
+                    arrayLevels.push({
+                      level: arrayNestingLevel,
+                      indent: indent,
+                      itemIndent: currentArrayItemIndent + tabSize,
+                    })
+                  }
+                  // If indent is less than a previous level, we're going back up in nesting
+                  else if (indent < lastArrayItemIndent) {
+                    // First check if we have a tracked level that matches this indent exactly
+                    let foundMatchingLevel = false
+                    for (let j = 0; j < arrayLevels.length; j++) {
+                      if (arrayLevels[j].indent === indent) {
+                        // Found an exact match, use that level's information
+                        arrayNestingLevel = arrayLevels[j].level
+                        arrayPropertyIndent = arrayLevels[j].itemIndent - tabSize
+                        foundMatchingLevel = true
+                        break
+                      }
+                    }
+
+                    // If we didn't find a matching level, revert through the stack
+                    if (!foundMatchingLevel) {
+                      while (arrayItemIndentStack.length > 0
+                        && indent < arrayItemIndentStack[arrayItemIndentStack.length - 1]) {
+                        arrayItemIndentStack.pop()
+                        arrayNestingLevel--
+                      }
+
+                      // Restore the parent property indent from the stack
+                      if (arrayPropertyIndentStack.length > 0) {
+                        arrayPropertyIndent = arrayPropertyIndentStack.pop()!
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            // Calculate intended indentation based on property depth and array nesting
+            let finalIndent
+
+            // Special case for array items that are children of an array property
+            if (isDirectChildOfArrayProp) {
+              // Use the array prop's indent level plus one tab size - matches expected output
+              finalIndent = arrayPropWithArrayValuesIndent + tabSize
+            }
+            else {
+              // Normal case for array items
+              finalIndent = arrayPropertyIndent + tabSize + (arrayNestingLevel * tabSize)
+            }
+
+            // Mark that we're inside an array item and track its indentation
+            insideArrayItem = true
+            currentArrayItemIndent = finalIndent
+
+            // Store this array item's indent for future comparison
+            if (!arrayItemIndentStack.includes(indent)) {
+              arrayItemIndentStack.push(indent)
+            }
+
+            // Reset property state within array items
+            lastPropertyLine = -1
+            lastPropertyIndent = -1
+            lastPropertyWasParent = false
+
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+            continue
+          }
+          // If we have a property line inside an array item, handle it specially
+          else if (insideArrayItem && isPropertyLine(trimmedContent) && !insideMultilineString) {
+            // Check if this is a property on the same array item or a new property outside the array
+            // If indent is less than or equal to any array base indent, we've exited all arrays
+            if (indent <= arrayBaseIndent) {
+              insideArray = false
+              insideArrayItem = false
+              arrayNestingLevel = 0
+              arrayPropertyIndentStack.length = 0
+              arrayItemIndentStack.length = 0
+            }
+            else {
+              // Process as regular property
+              // This is a property inside the current array item
+              // Properties within array items should be indented one level deeper than the item marker
+              const propertyIndent = currentArrayItemIndent + tabSize
+
+              // If this property ends with a colon and the next line has an array item,
+              // it's an array property we need to set up state for its array items
+              const isArrayProp = isArrayProperty(trimmedContent, lines, i)
+
+              // Specific detection for array properties that have array values
+              const isArrayPropWithArrayValues = isArrayProp
+
+              if (isArrayProp) {
+                // This becomes a new array property parent
+                // Track the old array property indent in case we need to restore it
+                arrayPropertyIndentStack.push(arrayPropertyIndent)
+                arrayPropertyIndent = propertyIndent
+
+                // Reset nesting level for this new array context
+                arrayNestingLevel = 0
+
+                // Set flag for array properties with array values (the specific case we need to fix)
+                if (isArrayPropWithArrayValues) {
+                  insideArrayPropWithArrayValues = true
+                  arrayPropWithArrayValuesIndent = propertyIndent
+                }
+              }
+
+              formattedLines[formattedIndex++] = getIndent(propertyIndent) + trimmedContent
+              continue
+            }
+          }
+          // If not an array item or array item property, we must be outside of the array prop context
+          else if (!ARRAY_ITEM_REGEX.test(trimmedContent)
+            && (!isPropertyLine(trimmedContent) || !insideArrayItem)) {
+            insideArrayPropWithArrayValues = false
+          }
+
           // Process property lines (including multiline string markers)
-          if (!insideMultilineString && trimmedContent.includes(':')) {
+          if (!insideMultilineString && isPropertyLine(trimmedContent)) {
             const currentIndent = indent
 
             // Extract property name
-            const colonIndex = trimmedContent.indexOf(':')
-            const propertyName = trimmedContent.substring(0, colonIndex).trim()
+            const propertyName = getPropertyName(trimmedContent)
 
             // Determine if this is a parent property or multiline string start
-            const isParentProp = PARENT_PROPERTY_REGEX.test(trimmedContent)
+            const isParentProp = isEmptyProperty(trimmedContent)
             const isMultilineStart = MULTILINE_STRING_REGEX.test(trimmedContent)
+
+            // Check different forms of array properties
+            const isInlineArray = INLINE_ARRAY_REGEX.test(trimmedContent)
+            const isFlowArrayStart = FLOW_ARRAY_START_REGEX.test(trimmedContent)
+            const isBlockArrayStart = isArrayProperty(trimmedContent, lines, i)
 
             // Check if it's a child of a parent property
             const sameIndentAsPrevious = currentIndent === lastPropertyIndent
@@ -299,8 +631,9 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             // Calculate indentation level
             const finalIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
 
-            // Add this property to the stack if it's a parent property
-            if (isParentProp) {
+            // Add this property to the stack if it's a parent property or array property
+            // Block arrays and parent properties need special indent handling for their children
+            if (isParentProp || isBlockArrayStart) {
               propertyStack.push({
                 name: propertyName,
                 indent: effectiveIndent,
@@ -312,7 +645,22 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             // Store property context for the next line
             lastPropertyLine = i
             lastPropertyIndent = currentIndent
-            lastPropertyWasParent = isParentProp
+            lastPropertyWasParent = isParentProp || isBlockArrayStart
+
+            // If this is an array property, set up array state
+            if (isBlockArrayStart) {
+              // Prepare for block array items (dash notation) on subsequent lines
+              arrayPropertyIndent = finalIndent
+            }
+            else if (isFlowArrayStart) {
+              // Track that we're in a flow-style array that might continue to next lines
+              insideFlowArray = true
+              arrayPropertyIndent = finalIndent
+            }
+            else if (isInlineArray) {
+              // For inline arrays like "prop: []", no special handling needed besides proper indentation
+              // The finalIndent already gives us the right position
+            }
 
             // Now handle multiline string start if needed
             if (isMultilineStart) {
