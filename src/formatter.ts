@@ -94,8 +94,6 @@ const INLINE_ARRAY_REGEX = /^[\w-]+:\s*\[\s*(?:\]\s*)?$/
 // Matches the start of flow arrays (property ending with [ and some content)
 const FLOW_ARRAY_START_REGEX = /^[\w-]+:\s*\[\s*\S+/
 
-console.log('LOCAL FORMATTER')
-
 /**
  * Helper function to check if a line contains a property definition.
  *
