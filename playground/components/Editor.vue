@@ -57,14 +57,26 @@ onMounted(async () => {
   monaco.languages.registerOnTypeFormattingEditProvider('mdc', {
     // Auto-format when the user types a newline character.
     autoFormatTriggerCharacters: ['\n'],
-    provideOnTypeFormattingEdits: model => [{
-      range: model.getFullModelRange(),
-      // We pass `true` to `isFormatOnType` to indicate formatOnType is being called.
-      text: mdcFormatter(model.getValue(), {
-        tabSize: TAB_SIZE,
-        isFormatOnType: true,
-      }),
-    }],
+    provideOnTypeFormattingEdits: (model, position) => {
+      // Get the line content before the current position
+      const lineContent = model.getLineContent(position.lineNumber - 1)
+
+      // Prevent auto-formatting if the line ends with a specific string(s) (e.g., '---' for the start/end of a YAML block)
+      const skipFormatPatterns = ['---']
+      if (skipFormatPatterns.some(pattern => lineContent.trim().endsWith(pattern))) {
+        // Return empty array to skip formatting
+        return []
+      }
+
+      return [{
+        range: model.getFullModelRange(),
+        // We pass `true` to `isFormatOnType` to indicate formatOnType is being called.
+        text: mdcFormatter(model.getValue(), {
+          tabSize: TAB_SIZE,
+          isFormatOnType: true,
+        }),
+      }]
+    },
   })
 
   // Register code folding provider
