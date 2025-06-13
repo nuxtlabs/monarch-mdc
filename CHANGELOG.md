@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/nuxtlabs/monarch/compare/v0.6.2...v0.7.0) (2025-06-13)
+
+### Features
+
+* **formatter:** properly format array props ([#16](https://github.com/nuxtlabs/monarch/issues/16)) ([a8a5c03](https://github.com/nuxtlabs/monarch/commit/a8a5c036e5dfd9d349e819c73d26f03c3d048d4e))
+
+## v0.7.0
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/v0.6.2...v0.7.0)
+
+### 🚀 Enhancements
+
+- **formatter:** Properly format array props ([#16](https://github.com/nuxtlabs/monarch/pull/16))
+
+### ❤️ Contributors
+
+- Adam DeHaven ([@adamdehaven](https://github.com/adamdehaven))
+
 ## [0.6.2](https://github.com/nuxtlabs/monarch/compare/v0.6.1...v0.6.2) (2025-06-06)
 
 ### Bug Fixes
