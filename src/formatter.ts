@@ -273,8 +273,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     let arrayBaseIndent = 0
     // Track array property indent level
     let arrayPropertyIndent = 0
-    // Track whether the current line continues a flow-style array
-    let insideFlowArray = false
     // Track if we're processing properties inside an array item
     let insideArrayItem = false
     // Track the indentation of the current array item start
@@ -406,18 +404,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             yamlState.multilineBaseIndent = null
             yamlState.multilineMinimumIndent = null
             // Continue processing this line as a normal property
-          }
-
-          // Check if we're inside a flow-style array that continues to the next line
-          if (insideFlowArray) {
-            // Check if the flow array ends on this line (has a closing bracket)
-            if (trimmedContent.includes(']')) {
-              insideFlowArray = false
-            }
-
-            // Format the continuation of the flow array at the same level as the property
-            formattedLines[formattedIndex++] = getIndent(arrayPropertyIndent) + trimmedContent
-            continue
           }
 
           // Handle array items first (higher priority than property lines)
@@ -700,7 +686,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             }
             else if (isFlowArrayStart) {
               // Track that we're in a flow-style array that might continue to next lines
-              insideFlowArray = true
               arrayPropertyIndent = finalIndent
             }
             else if (isInlineArray) {
