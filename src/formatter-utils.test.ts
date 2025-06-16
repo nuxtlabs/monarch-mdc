@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPropertyLine, isEmptyProperty, getPropertyName, isArrayProperty, getIndent } from './formatter-utils'
+import { isPropertyLine, isEmptyProperty, getPropertyName, isArrayProperty, getIndent, isYamlComment } from './formatter-utils'
 
 describe('formatter-utils', () => {
   describe('isPropertyLine', () => {
@@ -397,6 +397,34 @@ describe('formatter-utils', () => {
       // Depending on implementation - should it treat numbered lists as array items?
       // Adjust this test based on expected behavior
       expect(isArrayProperty('steps:', lines, 0)).toBe(false) // Assuming only dash-style arrays are recognized
+    })
+  })
+
+  describe('isYamlComment', () => {
+    it('identifies basic comment lines', () => {
+      expect(isYamlComment('#')).toBe(true)
+      expect(isYamlComment('# Comment')).toBe(true)
+      expect(isYamlComment('#Comment')).toBe(true)
+    })
+
+    it('identifies comment lines with leading whitespace', () => {
+      expect(isYamlComment(' #')).toBe(true)
+      expect(isYamlComment('  # Comment')).toBe(true)
+      expect(isYamlComment('\t#Comment')).toBe(true)
+      expect(isYamlComment(' \t # Mixed whitespace')).toBe(true)
+    })
+
+    it('rejects non-comment lines', () => {
+      expect(isYamlComment('Not a comment')).toBe(false)
+      expect(isYamlComment('property: value')).toBe(false)
+      expect(isYamlComment('property: value # with comment')).toBe(false)
+      expect(isYamlComment('Text with # in the middle')).toBe(false)
+      expect(isYamlComment('"# Not a comment"')).toBe(false)
+    })
+
+    it('handles edge cases', () => {
+      expect(isYamlComment('')).toBe(false)
+      expect(isYamlComment('   ')).toBe(false)
     })
   })
 
