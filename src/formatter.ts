@@ -13,6 +13,7 @@ import {
   isArrayProperty,
   isEmptyProperty,
   isPropertyLine,
+  isYamlComment,
 } from './formatter-utils'
 
 /**
@@ -148,8 +149,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     let arrayBaseIndent = 0
     // Track array property indent level
     let arrayPropertyIndent = 0
-    // Track whether the current line continues a flow-style array
-    let insideFlowArray = false
     // Track if we're processing properties inside an array item
     let insideArrayItem = false
     // Track the indentation of the current array item start
@@ -281,18 +280,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             yamlState.multilineBaseIndent = null
             yamlState.multilineMinimumIndent = null
             // Continue processing this line as a normal property
-          }
-
-          // Check if we're inside a flow-style array that continues to the next line
-          if (insideFlowArray) {
-            // Check if the flow array ends on this line (has a closing bracket)
-            if (trimmedContent.includes(']')) {
-              insideFlowArray = false
-            }
-
-            // Format the continuation of the flow array at the same level as the property
-            formattedLines[formattedIndex++] = getIndent(arrayPropertyIndent) + trimmedContent
-            continue
           }
 
           // Handle array items first (higher priority than property lines)
@@ -474,6 +461,40 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             insideArrayPropWithArrayValues = false
           }
 
+          // Handle YAML comment lines specially
+          if (!insideMultilineString && isYamlComment(trimmedContent)) {
+            // First see if this is a child of a parent property
+            const isChildOfParent = lastPropertyIndent !== -1
+              && lastPropertyWasParent
+              && indent > lastPropertyIndent
+
+            // Calculate the appropriate indentation level
+            let finalIndent
+
+            if (isChildOfParent) {
+              // If it's a child of a parent property, indent it at the appropriate level
+              finalIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
+
+              // If it's at a deeper level than the parent, add additional indentation
+              if (indent > lastPropertyIndent) {
+                finalIndent += tabSize
+              }
+            }
+            else {
+              // For top-level comments, use the base YAML indent
+              finalIndent = yamlIntendedIndent!
+
+              // If the comment appears to be indented from base level, preserve that indentation
+              if (indent > (yamlState.baseIndent || 0)) {
+                const relativeIndent = indent - (yamlState.baseIndent || 0)
+                finalIndent += relativeIndent
+              }
+            }
+
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+            continue
+          }
+
           // Process property lines (including multiline string markers)
           if (!insideMultilineString && isPropertyLine(trimmedContent)) {
             const currentIndent = indent
@@ -541,7 +562,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             }
             else if (isFlowArrayStart) {
               // Track that we're in a flow-style array that might continue to next lines
-              insideFlowArray = true
               arrayPropertyIndent = finalIndent
             }
             else if (isInlineArray) {
