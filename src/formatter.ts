@@ -93,6 +93,8 @@ const ARRAY_ITEM_REGEX = /^\s*-\s+/
 const INLINE_ARRAY_REGEX = /^[\w-]+:\s*\[\s*(?:\]\s*)?$/
 // Matches the start of flow arrays (property ending with [ and some content)
 const FLOW_ARRAY_START_REGEX = /^[\w-]+:\s*\[\s*\S+/
+// Matches YAML comment lines (lines starting with #)
+const YAML_COMMENT_REGEX = /^\s*#/
 
 /**
  * Helper function to check if a line contains a property definition.
@@ -178,6 +180,16 @@ function isArrayProperty(line: string, lines: string[], i: number): boolean {
   }
 
   return false
+}
+
+/**
+ * Helper function to check if a line is a YAML comment.
+ *
+ * @param {string} line - The line to check
+ * @returns {boolean} - True if the line is a YAML comment
+ */
+function isYamlComment(line: string): boolean {
+  return YAML_COMMENT_REGEX.test(line)
 }
 
 /**
@@ -585,6 +597,40 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
           else if (!ARRAY_ITEM_REGEX.test(trimmedContent)
             && (!isPropertyLine(trimmedContent) || !insideArrayItem)) {
             insideArrayPropWithArrayValues = false
+          }
+
+          // Handle YAML comment lines specially
+          if (!insideMultilineString && isYamlComment(trimmedContent)) {
+            // First see if this is a child of a parent property
+            const isChildOfParent = lastPropertyIndent !== -1
+              && lastPropertyWasParent
+              && indent > lastPropertyIndent
+
+            // Calculate the appropriate indentation level
+            let finalIndent
+
+            if (isChildOfParent) {
+              // If it's a child of a parent property, indent it at the appropriate level
+              finalIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
+
+              // If it's at a deeper level than the parent, add additional indentation
+              if (indent > lastPropertyIndent) {
+                finalIndent += tabSize
+              }
+            }
+            else {
+              // For top-level comments, use the base YAML indent
+              finalIndent = yamlIntendedIndent!
+
+              // If the comment appears to be indented from base level, preserve that indentation
+              if (indent > (yamlState.baseIndent || 0)) {
+                const relativeIndent = indent - (yamlState.baseIndent || 0)
+                finalIndent += relativeIndent
+              }
+            }
+
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+            continue
           }
 
           // Process property lines (including multiline string markers)
