@@ -4,6 +4,7 @@ import {
   QUOTED_PROPERTY_NAME_WITH_CAPTURE_GROUP,
   QUOTED_PROPERTY_NAME,
   STANDARD_PROPERTY_NAME,
+  YAML_COMMENT_REGEX,
 } from './expressions'
 
 /**
@@ -93,6 +94,16 @@ export function isArrayProperty(line: string = '', lines: string[], i: number): 
   }
 
   return false
+}
+
+/**
+ * Helper function to check if a line is a YAML comment.
+ *
+ * @param {string} line - The line to check
+ * @returns {boolean} - True if the line is a YAML comment
+ */
+export function isYamlComment(line: string): boolean {
+  return YAML_COMMENT_REGEX.test(line)
 }
 
 /**

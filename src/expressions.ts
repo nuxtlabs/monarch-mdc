@@ -30,3 +30,5 @@ export const STANDARD_PROPERTY_NAME = /^([\w-]+)\s*:/
 export const INLINE_ARRAY_REGEX = /^[\w-]+:\s*\[\s*(?:\]\s*)?$/
 /* Matches the start of flow arrays (property ending with [ and some content) */
 export const FLOW_ARRAY_START_REGEX = /^[\w-]+:\s*\[\s*\S+/
+/* Matches YAML comment lines (lines starting with #) */
+export const YAML_COMMENT_REGEX = /^\s*#/
