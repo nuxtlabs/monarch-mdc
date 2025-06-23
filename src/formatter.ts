@@ -6,6 +6,16 @@
  * Any changes to the function signature or behavior should be tested and verified in the extension.
  */
 
+import * as exp from './expressions'
+import {
+  getIndent,
+  getPropertyName,
+  isArrayProperty,
+  isEmptyProperty,
+  isPropertyLine,
+  isYamlComment,
+} from './formatter-utils'
+
 /**
  * Formatter Options
  */
@@ -67,128 +77,6 @@ interface ArrayLevelInfo {
   indent: number
   /* Formatted indent for items at this level */
   itemIndent: number
-}
-
-// Regular expressions for detecting different MDC elements
-const INDENT_REGEX = /^\s*/
-// Matches block component opening tags like "::name"
-const COMPONENT_START_REGEX = /^\s*:{2,}[\w-]+/
-// Matches block component closing tags like "::"
-const COMPONENT_END_REGEX = /^\s*:{2,}\s*$/
-// Matches YAML multiline indicators "|" or ">"
-const MULTILINE_STRING_REGEX = /^[\w-]+:\s*[|>]/
-// Matches markdown code block opening tags like "```" or "~~~"
-const CODE_BLOCK_REGEX = /^\s*(?:`{3,}|~{3,})/
-// Matches unordered list items like "- item" or "* item"
-const UNORDERED_LIST_REGEX = /^\s*[-*]\s+/
-// Matches ordered list items like "1. item"
-const ORDERED_LIST_REGEX = /^\s*\d+\.\s+/
-// Matches task list items like "- [ ] item" or "* [x] item"
-const TASK_LIST_REGEX = /^\s*[-*]\s+\[.\]\s+/
-// Matches parent properties (property ending with ":" without a value)
-const PARENT_PROPERTY_REGEX = /^[\w-]+:\s*$/
-// Matches YAML array items (lines starting with "- ")
-const ARRAY_ITEM_REGEX = /^\s*-\s+/
-// Matches inline arrays (property ending with [] or [ ] or similar with whitespace between brackets)
-const INLINE_ARRAY_REGEX = /^[\w-]+:\s*\[\s*(?:\]\s*)?$/
-// Matches the start of flow arrays (property ending with [ and some content)
-const FLOW_ARRAY_START_REGEX = /^[\w-]+:\s*\[\s*\S+/
-
-/**
- * Helper function to check if a line contains a property definition.
- *
- * @param {string} line - The trimmed line to check
- * @returns {boolean} - True if the line defines a property
- */
-function isPropertyLine(line: string): boolean {
-  // First, check if the line has a colon
-  if (!line.includes(':')) {
-    return false
-  }
-
-  // Handle quoted property names: "prop-name": value or 'prop-name': value
-  if (/^"[^"]+"\s*:|^'[^']+'\s*:/.test(line)) {
-    return true
-  }
-
-  // Handle standard property names: prop-name: value
-  // We need to ensure the colon is part of the property definition, not in a value
-  const match = line.match(/^([\w-]+)\s*:/)
-  if (match) {
-    // Check that the property name is valid (word chars and dashes)
-    const propName = match[1]
-    if (/^[\w-]+$/.test(propName)) {
-      return true
-    }
-  }
-
-  return false
-}
-
-/**
- * Helper function to check if a line is a property with no value.
- *
- * @param {string} line - The line to check
- * @returns {boolean} - True if the line defines a property with no value
- */
-function isEmptyProperty(line: string): boolean {
-  return PARENT_PROPERTY_REGEX.test(line)
-}
-
-/**
- * Helper function to extract a property name safely.
- * This handles quoted property names and avoids issues with values containing colons.
- *
- * @param {string} line - The line containing a property
- * @returns {string} - The property name, or empty string if not found
- */
-function getPropertyName(line: string): string {
-  // Try to match quoted properties first
-  const quotedMatch = line.match(/^(?:"([^"]+)"|'([^']+)')\s*:/)
-  if (quotedMatch) {
-    return quotedMatch[1] || quotedMatch[2] || ''
-  }
-
-  // Then try standard properties
-  const standardMatch = line.match(/^([\w-]+)\s*:/)
-  if (standardMatch) {
-    return standardMatch[1]
-  }
-
-  return ''
-}
-
-/**
- * Helper function to check if a line is an array property that might have array values.
- *
- * @param {string} line - The current line
- * @param {string[]} lines - All lines in the document
- * @param {number} i - Current line index
- * @returns {boolean} - True if this is a property that might have array values
- */
-function isArrayProperty(line: string, lines: string[], i: number): boolean {
-  // First check if this is a property without a value
-  if (!isEmptyProperty(line)) {
-    return false
-  }
-
-  // Then check if the next line is an array item
-  if (i + 1 < lines.length && ARRAY_ITEM_REGEX.test(lines[i + 1].trim())) {
-    return true
-  }
-
-  return false
-}
-
-/**
- * Cache for commonly used indentation strings to avoid repeated string creation
- */
-const indentCache: { [key: number]: string } = {}
-function getIndent(spaces: number): string {
-  if (!indentCache[spaces]) {
-    indentCache[spaces] = ' '.repeat(spaces)
-  }
-  return indentCache[spaces]
 }
 
 /**
@@ -261,8 +149,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     let arrayBaseIndent = 0
     // Track array property indent level
     let arrayPropertyIndent = 0
-    // Track whether the current line continues a flow-style array
-    let insideFlowArray = false
     // Track if we're processing properties inside an array item
     let insideArrayItem = false
     // Track the indentation of the current array item start
@@ -286,7 +172,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       // Leading whitespace count
-      const indent = line.match(INDENT_REGEX)?.[0].length || 0
+      const indent = line.match(exp.INDENT_REGEX)?.[0].length || 0
       const trimmedContent = line.trim()
       // Current component's indent level
       const parentIndent = componentIndentStack[componentIndentStack.length - 1] || 0
@@ -302,7 +188,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       }
 
       // Handle code block markers (``` or ~~~)
-      if (CODE_BLOCK_REGEX.test(trimmedContent)) {
+      if (exp.CODE_BLOCK_REGEX.test(trimmedContent)) {
         insideCodeBlock = !insideCodeBlock
         if (insideCodeBlock) {
           codeBlockBaseIndent = parentIndent
@@ -365,7 +251,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       }
 
       // Handle component opening tags (::component-name)
-      if (COMPONENT_START_REGEX.test(line)) {
+      if (exp.COMPONENT_START_REGEX.test(line)) {
         formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
         // Save current indent level for nested components
         componentIndentStack.push(currentIndent)
@@ -377,7 +263,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       }
 
       // Handle component closing tags (::)
-      if (COMPONENT_END_REGEX.test(line)) {
+      if (exp.COMPONENT_END_REGEX.test(line)) {
         // Restore previous indent level
         currentIndent = componentIndentStack.pop() || 0
         formattedLines[formattedIndex++] = getIndent(currentIndent) + trimmedContent
@@ -396,20 +282,8 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             // Continue processing this line as a normal property
           }
 
-          // Check if we're inside a flow-style array that continues to the next line
-          if (insideFlowArray) {
-            // Check if the flow array ends on this line (has a closing bracket)
-            if (trimmedContent.includes(']')) {
-              insideFlowArray = false
-            }
-
-            // Format the continuation of the flow array at the same level as the property
-            formattedLines[formattedIndex++] = getIndent(arrayPropertyIndent) + trimmedContent
-            continue
-          }
-
           // Handle array items first (higher priority than property lines)
-          if (ARRAY_ITEM_REGEX.test(trimmedContent)) {
+          if (exp.ARRAY_ITEM_REGEX.test(trimmedContent)) {
             // Check if this array item is a direct child of an array-prop parent
             const isDirectChildOfArrayProp = insideArrayPropWithArrayValues
               && indent > arrayPropWithArrayValuesIndent
@@ -582,9 +456,43 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             }
           }
           // If not an array item or array item property, we must be outside of the array prop context
-          else if (!ARRAY_ITEM_REGEX.test(trimmedContent)
+          else if (!exp.ARRAY_ITEM_REGEX.test(trimmedContent)
             && (!isPropertyLine(trimmedContent) || !insideArrayItem)) {
             insideArrayPropWithArrayValues = false
+          }
+
+          // Handle YAML comment lines specially
+          if (!insideMultilineString && isYamlComment(trimmedContent)) {
+            // First see if this is a child of a parent property
+            const isChildOfParent = lastPropertyIndent !== -1
+              && lastPropertyWasParent
+              && indent > lastPropertyIndent
+
+            // Calculate the appropriate indentation level
+            let finalIndent
+
+            if (isChildOfParent) {
+              // If it's a child of a parent property, indent it at the appropriate level
+              finalIndent = yamlIntendedIndent! + (currentPropertyDepth * tabSize)
+
+              // If it's at a deeper level than the parent, add additional indentation
+              if (indent > lastPropertyIndent) {
+                finalIndent += tabSize
+              }
+            }
+            else {
+              // For top-level comments, use the base YAML indent
+              finalIndent = yamlIntendedIndent!
+
+              // If the comment appears to be indented from base level, preserve that indentation
+              if (indent > (yamlState.baseIndent || 0)) {
+                const relativeIndent = indent - (yamlState.baseIndent || 0)
+                finalIndent += relativeIndent
+              }
+            }
+
+            formattedLines[formattedIndex++] = getIndent(finalIndent) + trimmedContent
+            continue
           }
 
           // Process property lines (including multiline string markers)
@@ -596,11 +504,11 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
 
             // Determine if this is a parent property or multiline string start
             const isParentProp = isEmptyProperty(trimmedContent)
-            const isMultilineStart = MULTILINE_STRING_REGEX.test(trimmedContent)
+            const isMultilineStart = exp.MULTILINE_STRING_REGEX.test(trimmedContent)
 
             // Check different forms of array properties
-            const isInlineArray = INLINE_ARRAY_REGEX.test(trimmedContent)
-            const isFlowArrayStart = FLOW_ARRAY_START_REGEX.test(trimmedContent)
+            const isInlineArray = exp.INLINE_ARRAY_REGEX.test(trimmedContent)
+            const isFlowArrayStart = exp.FLOW_ARRAY_START_REGEX.test(trimmedContent)
             const isBlockArrayStart = isArrayProperty(trimmedContent, lines, i)
 
             // Check if it's a child of a parent property
@@ -654,7 +562,6 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
             }
             else if (isFlowArrayStart) {
               // Track that we're in a flow-style array that might continue to next lines
-              insideFlowArray = true
               arrayPropertyIndent = finalIndent
             }
             else if (isInlineArray) {
@@ -721,7 +628,7 @@ export const formatter = (content: string, { tabSize = 2, isFormatOnType = false
       }
 
       // Handle markdown lists
-      if (UNORDERED_LIST_REGEX.test(trimmedContent) || ORDERED_LIST_REGEX.test(trimmedContent) || TASK_LIST_REGEX.test(trimmedContent)) {
+      if (exp.UNORDERED_LIST_REGEX.test(trimmedContent) || exp.ORDERED_LIST_REGEX.test(trimmedContent) || exp.TASK_LIST_REGEX.test(trimmedContent)) {
         // Reset list state if we're in a different component context
         if (!listState || listState.componentId !== currentComponentId) {
           listState = {
