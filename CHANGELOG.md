@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.8.0](https://github.com/nuxtlabs/monarch/compare/v0.7.0...v0.8.0) (2025-06-24)
+
+### Bug Fixes
+
+* **formatter:** indentation fixes and split out formatter utils with tests ([#17](https://github.com/nuxtlabs/monarch/issues/17)) ([3eb2de4](https://github.com/nuxtlabs/monarch/commit/3eb2de469de0ffc37062e7af92e149b888a7b139))
+
+## v0.8.0
+
+[compare changes](https://github.com/nuxtlabs/monarch/compare/v0.7.0...v0.8.0)
+
+### 🩹 Fixes
+
+- **formatter:** Indentation fixes and split out formatter utils with tests ([#17](https://github.com/nuxtlabs/monarch/pull/17))
+
+### 🏡 Chore
+
+- Upgrade deps ([5cf2bcd](https://github.com/nuxtlabs/monarch/commit/5cf2bcd))
+
+### ❤️ Contributors
+
+- Farnabaz <farnabaz@gmail.com>
+- Adam DeHaven ([@adamdehaven](https://github.com/adamdehaven))
+
 ## [0.7.0](https://github.com/nuxtlabs/monarch/compare/v0.6.2...v0.7.0) (2025-06-13)
 
 ### Features
