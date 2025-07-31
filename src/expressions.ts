@@ -25,7 +25,7 @@ export const QUOTED_PROPERTY_NAME = /^"[^"]+"\s*:|^'[^']+'\s*:/
 /* Matches MDC property names with double or single quotes in an object literal, e.g. `"property":` or `'property':` but also uses a capture group for extraction. */
 export const QUOTED_PROPERTY_NAME_WITH_CAPTURE_GROUP = /^(?:"([^"]+)"|'([^']+)')\s*:/
 /* Matches MDC property names without quotes, e.g. `property:` */
-export const STANDARD_PROPERTY_NAME = /^([\w-]+)\s*:/
+export const STANDARD_PROPERTY_NAME = /^:?([\w-]+)\s*:/
 /* Matches inline arrays (property ending with [] or [ ] or similar with whitespace between brackets) */
 export const INLINE_ARRAY_REGEX = /^[\w-]+:\s*\[\s*(?:\]\s*)?$/
 /* Matches the start of flow arrays (property ending with [ and some content) */
