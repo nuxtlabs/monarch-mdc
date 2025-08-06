@@ -25,13 +25,14 @@ export function isPropertyLine(line: string = ''): boolean {
     return true
   }
 
-  // Handle standard property names: prop-name: value
+  // Handle standard property names: prop-name: value or :prop-name: value (for dynamic props)
   // We need to ensure the colon is part of the property definition, not in a value
   const match = _line.match(STANDARD_PROPERTY_NAME)
   if (match) {
-    // Check that the property name is valid (word chars and dashes)
+    // Check that the property name is valid (word chars, dashes, and can start with colon)
     const propName = match[1]
-    if (/^[\w-]+$/.test(propName)) {
+    // Allow property names that optionally start with : and contain word chars and dashes
+    if (/^:?[\w-]+$/.test(propName)) {
       return true
     }
   }
