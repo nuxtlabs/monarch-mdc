@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.8.1](https://github.com/nuxtlabs/monarch-mdc/compare/v0.8.0...v0.8.1) (2025-08-08)
+
+### Bug Fixes
+
+* **formatter:** properly format dynamic props ([#18](https://github.com/nuxtlabs/monarch-mdc/issues/18)) ([ff6f049](https://github.com/nuxtlabs/monarch-mdc/commit/ff6f049b5eec516e7a197eb55b1889a9892160b0))
+
+## v0.8.1
+
+[compare changes](https://github.com/nuxtlabs/monarch-mdc/compare/v0.8.0...v0.8.1)
+
+### 🩹 Fixes
+
+- **formatter:** Properly format dynamic props ([#18](https://github.com/nuxtlabs/monarch-mdc/pull/18))
+
+### 🏡 Chore
+
+- Upgrade deps ([60f822e](https://github.com/nuxtlabs/monarch-mdc/commit/60f822e))
+
+### ❤️ Contributors
+
+- Farnabaz <farnabaz@gmail.com>
+- Adam DeHaven
+
 ## [0.8.0](https://github.com/nuxtlabs/monarch/compare/v0.7.0...v0.8.0) (2025-06-24)
 
 ### Bug Fixes
